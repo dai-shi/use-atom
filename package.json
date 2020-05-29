@@ -14,7 +14,6 @@
   "types": "./dist/src/index.d.ts",
   "sideEffects": false,
   "files": [
-    "src",
     "dist"
   ],
   "scripts": {
