@@ -2,10 +2,10 @@
 
 ## [Unreleased]
 
-## [0.1.1] - 2020-05-28
+## [0.2.0] - 2020-05-30
 ### Changed
-- Improve types
+- Improve logic
 
-## [0.1.0] - 2020-05-18
+## [0.1.0] - 2020-05-29
 ### Added
 - Initial release

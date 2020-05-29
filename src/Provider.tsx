@@ -34,14 +34,13 @@ type Action =
     update: SetStateAction<unknown>;
   }
   | {
-    type: 'NEW_VALUE';
+    type: 'SET_VALUE';
     atom: WritableAtom<unknown>;
     value: unknown;
   }
   | {
-    type: 'NEW_DEPENDENT';
-    atom: Atom<unknown>;
-    dependent: Atom<unknown>;
+    type: 'ADD_DEPENDENTS';
+    deps: { atom: Atom<unknown>; dependent: Atom<unknown> }[];
   }
   | {
     type: 'UPDATE_DEPENDENTS';
@@ -56,21 +55,85 @@ export const Provider: React.FC = ({ children }) => {
     const currState = { ...prevState };
     let dirty = false;
     let inReducer = true;
-    const newDependent = (atom: Atom<unknown>, dependent: Atom<unknown>) => {
-      if (atom === dependent) {
+    const addDependents = (
+      deps: { atom: Atom<unknown>; dependent: Atom<unknown> }[],
+    ) => {
+      deps.forEach(({ atom, dependent }) => {
+        const currSet = currState.dependents.get(atom) || new Set();
+        if (currSet.has(dependent)) {
+          return;
+        }
+        const dependents = new Map(currState.dependents).set(atom, currSet.add(dependent));
+        currState.dependents = dependents;
+        dirty = true;
+      });
+    };
+    const getSuspendable = (atom: Atom<unknown>) => {
+      // XXX too complicated
+      const deps: { atom: Atom<unknown>; dependent: Atom<unknown> }[] = [];
+      const nextValue = atom.get({
+        get: (a: Atom<unknown>) => {
+          if (a !== atom) {
+            deps.push({ atom: a, dependent: atom });
+          }
+          const s = currState.values.get(a);
+          return s ? s.value : a.default;
+        },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any);
+      let suspendable: Suspendable<unknown>;
+      if (nextValue instanceof Promise) {
+        const currSuspendable = currState.values.get(atom);
+        const currValue = currSuspendable ? currSuspendable.value : atom.default;
+        suspendable = {
+          promise: nextValue.then(async (v) => {
+            dispatch({ type: 'ADD_DEPENDENTS', deps });
+            const promises = deps
+              .map((dep) => currState.values.get(dep.atom)?.promise)
+              .filter((x) => !!x);
+            if (promises.length > 0) {
+              await Promise.all(promises).then(async () => {
+                const nextSuspendable = getSuspendable(atom);
+                suspendable.value = nextSuspendable.value;
+                await nextSuspendable.promise;
+              });
+            } else {
+              suspendable.promise = null;
+              suspendable.value = v;
+            }
+          }),
+          value: currValue,
+        };
+      } else {
+        addDependents(deps);
+        const promises = deps
+          .map((dep) => currState.values.get(dep.atom)?.promise)
+          .filter((x) => !!x);
+        if (promises.length > 0) {
+          suspendable = {
+            promise: Promise.all(promises).then(async () => {
+              const nextSuspendable = getSuspendable(atom);
+              suspendable.value = nextSuspendable.value;
+              await nextSuspendable.promise;
+            }),
+            value: nextValue,
+          };
+        } else {
+          suspendable = {
+            promise: null,
+            value: nextValue,
+          };
+        }
+      }
+      return suspendable;
+    };
+    const initAtom = (atom: Atom<unknown>) => {
+      if (currState.values.has(atom)) {
         return;
       }
-      const currSet = currState.dependents.get(atom) || new Set();
-      if (currSet.has(dependent)) {
-        return;
-      }
-      if (!inReducer) {
-        // schedule next render
-        dispatch({ type: 'NEW_DEPENDENT', atom, dependent });
-        return;
-      }
-      const dependents = new Map(currState.dependents).set(atom, currSet.add(dependent));
-      currState.dependents = dependents;
+      const suspendable = getSuspendable(atom);
+      const values = new Map(currState.values).set(atom, suspendable);
+      currState.values = values;
       dirty = true;
     };
     const updateDependents = (atom: Atom<unknown>) => {
@@ -80,31 +143,12 @@ export const Provider: React.FC = ({ children }) => {
       }
       const values = new Map(currState.values);
       currSet.forEach((dependent) => {
-        const currSuspendable = currState.values.get(dependent);
-        const currValue = currSuspendable ? currSuspendable.value : dependent.default;
-        const nextValue = dependent.get({
-          get: (a: Atom<unknown>) => {
-            newDependent(a, dependent);
-            const s = currState.values.get(a);
-            return s ? s.value : a.default;
-          },
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any);
-        let suspendable: Suspendable<unknown>;
-        if (nextValue instanceof Promise) {
-          suspendable = {
-            promise: nextValue.then((v) => {
-              suspendable.promise = null;
-              suspendable.value = v;
-              dispatch({ type: 'UPDATE_DEPENDENTS', atom: dependent });
-            }),
-            value: currValue,
-          };
+        const suspendable = getSuspendable(dependent);
+        if (suspendable.promise) {
+          suspendable.promise.then(() => {
+            dispatch({ type: 'UPDATE_DEPENDENTS', atom: dependent });
+          });
         } else {
-          suspendable = {
-            promise: null,
-            value: nextValue,
-          };
           updateDependents(dependent);
         }
         values.set(dependent, suspendable);
@@ -112,40 +156,7 @@ export const Provider: React.FC = ({ children }) => {
       currState.values = values;
       dirty = true;
     };
-    const initAtom = (atom: Atom<unknown>) => {
-      if (currState.values.has(atom)) {
-        return;
-      }
-      const nextValue = atom.get({
-        get: (a: Atom<unknown>) => {
-          newDependent(a, atom);
-          const s = currState.values.get(a);
-          return s ? s.value : a.default;
-        },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any);
-      let suspendable: Suspendable<unknown>;
-      if (nextValue instanceof Promise) {
-        suspendable = {
-          promise: nextValue.then((v) => {
-            suspendable.promise = null;
-            suspendable.value = v;
-            dispatch({ type: 'UPDATE_DEPENDENTS', atom });
-          }),
-          value: atom.default,
-        };
-      } else {
-        suspendable = {
-          promise: null,
-          value: nextValue,
-        };
-        updateDependents(atom);
-      }
-      const values = new Map(currState.values).set(atom, suspendable);
-      currState.values = values;
-      dirty = true;
-    };
-    const newValue = (atom: WritableAtom<unknown>, value: unknown) => {
+    const setValue = (atom: WritableAtom<unknown>, value: unknown) => {
       const currSuspendable = currState.values.get(atom);
       const currValue = currSuspendable ? currSuspendable.value : atom.default;
       if (currValue === value) {
@@ -153,13 +164,38 @@ export const Provider: React.FC = ({ children }) => {
       }
       if (!inReducer) {
         // schedule next render
-        dispatch({ type: 'NEW_VALUE', atom, value });
+        dispatch({ type: 'SET_VALUE', atom, value });
         return;
       }
-      const suspendable = {
-        promise: null,
-        value,
-      };
+      currState.values = new Map(currState.values).set(atom, { promise: null, value });
+      const promise = atom.set({
+        get: (a: Atom<unknown>) => {
+          const s = currState.values.get(a);
+          return s ? s.value : a.default;
+        },
+        set: (a: WritableAtom<unknown>, v: unknown) => {
+          if (a !== atom) {
+            // XXX we can't make this suspendable
+            // because we don't know which atom will be updated in advance.
+            setValue(a, v);
+          }
+        },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any, value);
+      let suspendable: Suspendable<unknown>;
+      if (promise instanceof Promise) {
+        suspendable = {
+          promise: promise.then(async () => {
+            const nextSuspendable = getSuspendable(atom);
+            suspendable.value = nextSuspendable.value;
+            await nextSuspendable.promise;
+            suspendable.value = nextSuspendable.value;
+          }),
+          value: currValue,
+        };
+      } else {
+        suspendable = getSuspendable(atom);
+      }
       const values = new Map(currState.values).set(atom, suspendable);
       currState.values = values;
       dirty = true;
@@ -169,16 +205,7 @@ export const Provider: React.FC = ({ children }) => {
       const currSuspendable = currState.values.get(atom);
       const currValue = currSuspendable ? currSuspendable.value : atom.default;
       const nextValue = typeof update === 'function' ? update(currValue) : update;
-      atom.set({
-        get: (a: Atom<unknown>) => {
-          const s = currState.values.get(a);
-          return s ? s.value : a.default;
-        },
-        set: (a: WritableAtom<unknown>, v: unknown) => {
-          newValue(a, v);
-        },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any, nextValue);
+      setValue(atom, nextValue);
     };
     switch (action.type) {
       case 'INIT_ATOM':
@@ -187,14 +214,14 @@ export const Provider: React.FC = ({ children }) => {
       case 'UPDATE_DEPENDENTS':
         updateDependents(action.atom);
         break;
-      case 'NEW_VALUE':
-        newValue(action.atom, action.value);
+      case 'SET_VALUE':
+        setValue(action.atom, action.value);
         break;
       case 'UPDATE_VALUE':
         updateValue(action.atom, action.update);
         break;
-      case 'NEW_DEPENDENT':
-        newDependent(action.atom, action.dependent);
+      case 'ADD_DEPENDENTS':
+        addDependents(action.deps);
         break;
       default:
         throw new Error('unexpected action type');

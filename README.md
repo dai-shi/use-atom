@@ -24,8 +24,8 @@ and url encoded state (yet).
 
 Some other limitations:
 - No way to clean up registered atoms
-- Async atoms updates very slowly
 - useTransition doesn't work as expected
+- async `set` can't be in a transition
 - deriveAtom (= `selector` in Recoil) leads to `null` default value
 
 ## Install
@@ -84,7 +84,7 @@ const App = () => (
 );
 ```
 
-## Usage (Recoil subset)
+## Usage (Recoil subset API)
 
 ```javascript
 import React from 'react';
