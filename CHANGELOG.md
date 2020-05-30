@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+### Changed
+- Improve logic again
 
 ## [0.2.0] - 2020-05-30
 ### Changed

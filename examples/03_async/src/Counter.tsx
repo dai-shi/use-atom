@@ -38,10 +38,17 @@ const Total: React.FC = () => {
 
 const Update1: React.FC = () => {
   const setValue = useSetRecoilState(delayedUpdate1);
+  const [startTransiton, isPending] = useTransition({ timeoutMs: 2000 });
+  const decrement = () => {
+    startTransiton(() => {
+      setValue((c) => (c || 0) - 1);
+    });
+  };
   return (
     <div>
-      <button type="button" onClick={() => setValue((c) => (c || 0) - 1)}>-1</button>
-      <div>{Math.random()}</div>
+      <button type="button" onClick={decrement}>-1</button>
+      {Math.random()}
+      {isPending && 'Pending...'}
     </div>
   );
 };
