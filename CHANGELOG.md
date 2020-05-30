@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+
+## [0.3.0] - 2020-05-30
 ### Changed
 - Improve logic (WIP)
 
