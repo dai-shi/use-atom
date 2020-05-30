@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 ### Changed
-- Improve logic again
+- Improve logic (WIP)
 
 ## [0.2.0] - 2020-05-30
 ### Changed

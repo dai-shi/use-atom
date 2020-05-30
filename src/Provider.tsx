@@ -48,7 +48,6 @@ type Action =
   | {
     type: 'UPDATE_DEPENDENTS';
     atom: Atom<unknown>;
-    mode: 'get' | 'set';
   };
 
 export const DispatchContext = createContext(warningObject as Dispatch<Action>);
@@ -96,7 +95,12 @@ export const Provider: React.FC = ({ children }) => {
       });
     };
 
-    const suspendDependents = (atom: Atom<unknown>, mode: 'get' | 'set', promise: Promise<void>) => {
+    /*
+    const suspendDependents = (
+      atom: Atom<unknown>,
+      mode: 'get' | 'set',
+      promise: Promise<void>,
+    ) => {
       const currSet = (
         mode === 'get' ? currState.getDependents : currState.setDependents
       ).get(atom) || new Set();
@@ -108,6 +112,7 @@ export const Provider: React.FC = ({ children }) => {
         suspendDependents(dependent, mode, promise);
       });
     };
+    */
 
     const getSuspendable = (atom: Atom<unknown>) => {
       const deps: { atom: Atom<unknown>; dependent: Atom<unknown> }[] = [];
@@ -149,10 +154,8 @@ export const Provider: React.FC = ({ children }) => {
       setSuspendable(atom, suspendable);
     };
 
-    const updateDependents = (atom: Atom<unknown>, mode: 'get' | 'set') => {
-      const currSet = (
-        mode === 'get' ? currState.getDependents : currState.setDependents
-      ).get(atom) || new Set();
+    const updateDependents = (atom: Atom<unknown>) => {
+      const currSet = currState.getDependents.get(atom) || new Set();
       if (currSet.size === 0) {
         return;
       }
@@ -161,22 +164,15 @@ export const Provider: React.FC = ({ children }) => {
         setSuspendable(dependent, suspendable);
         if (suspendable.promise) {
           suspendable.promise.then(() => {
-            dispatch({ type: 'UPDATE_DEPENDENTS', atom: dependent, mode });
+            dispatch({ type: 'UPDATE_DEPENDENTS', atom: dependent });
           });
         } else {
-          updateDependents(dependent, 'get');
-          if (mode === 'set') {
-            updateDependents(dependent, 'set');
-          }
+          updateDependents(dependent);
         }
       });
     };
 
     const setValue = (atom: WritableAtom<unknown>, value: unknown) => {
-      const currValue = getCurrValue(atom);
-      if (currValue === value) {
-        return;
-      }
       if (!inReducer) {
         // schedule next render
         dispatch({ type: 'SET_VALUE', atom, value });
@@ -188,7 +184,7 @@ export const Provider: React.FC = ({ children }) => {
         get: getCurrValue,
         set: (a: WritableAtom<unknown>, v: unknown) => {
           if (a !== atom) {
-            deps.push({ atom: a, dependent: atom });
+            deps.push({ atom, dependent: a });
             setValue(a, v);
           }
         },
@@ -196,8 +192,10 @@ export const Provider: React.FC = ({ children }) => {
       } as any, value);
       let suspendable: Suspendable<unknown>;
       if (promise instanceof Promise) {
+        /*
         suspendDependents(atom, 'get', promise);
         suspendDependents(atom, 'set', promise);
+         */
         suspendable = {
           promise: promise.then(async () => {
             dispatch({ type: 'ADD_DEPENDENTS', deps, mode: 'set' });
@@ -205,14 +203,14 @@ export const Provider: React.FC = ({ children }) => {
             await nextSuspendable.promise;
             suspendable.value = nextSuspendable.value;
           }),
-          value: currValue,
+          value: getCurrValue(atom),
         };
       } else {
         addDependents(deps, 'set');
         suspendable = getSuspendable(atom);
       }
       setSuspendable(atom, suspendable);
-      updateDependents(atom, 'get');
+      updateDependents(atom);
     };
 
     const updateValue = (atom: WritableAtom<unknown>, update: SetStateAction<unknown>) => {
@@ -226,7 +224,7 @@ export const Provider: React.FC = ({ children }) => {
         initAtom(action.atom);
         break;
       case 'UPDATE_DEPENDENTS':
-        updateDependents(action.atom, action.mode);
+        updateDependents(action.atom);
         break;
       case 'SET_VALUE':
         setValue(action.atom, action.value);

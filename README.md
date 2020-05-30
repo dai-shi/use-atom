@@ -23,9 +23,9 @@ Hence, there's no support for persistant state
 and url encoded state (yet).
 
 Some other limitations:
-- No way to clean up registered atoms
 - useTransition doesn't work as expected
 - async `set` can't be in a transition
+- No way to clean up registered atoms
 - deriveAtom (= `selector` in Recoil) leads to `null` default value
 
 ## Install
