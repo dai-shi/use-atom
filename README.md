@@ -1,8 +1,8 @@
 # use-atom
 
-[![CI](https://github.com/dai-shi/use-atom/workflows/CI/badge.svg)](https://github.com/dai-shi/use-atom/actions)
-[![npm version](https://badge.fury.io/js/use-atom.svg)](https://badge.fury.io/js/use-atom)
-[![bundle size](https://badgen.net/bundlephobia/minzip/use-atom)](https://bundlephobia.com/result?p=use-atom)
+[![CI](https://img.shields.io/github/workflow/status/dai-shi/use-atom/CI)](https://github.com/dai-shi/use-atom/actions?query=workflow%3ACI)
+[![npm](https://img.shields.io/npm/v/use-atom)](https://www.npmjs.com/package/use-atom)
+[![size](https://img.shields.io/bundlephobia/minzip/use-atom)](https://bundlephobia.com/result?p=use-atom)
 
 Recoil inspired implementation with use-context-selector
 
