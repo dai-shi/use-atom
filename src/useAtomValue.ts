@@ -1,19 +1,22 @@
 import { useCallback, useEffect } from 'react';
 import { useContext, useContextSelector } from 'use-context-selector';
 
-import { StateContext, DispatchContext, Suspendable } from './Provider';
+import { StateContext, DispatchContext, AtomState } from './Provider';
 import { Atom } from './createAtom';
 
 export function useAtomValue<Value>(atom: Atom<Value>) {
   const dispatch = useContext(DispatchContext);
-  const suspendable = useContextSelector(StateContext, useCallback((state) => (
-    state.values.get(atom) as Suspendable<Value> | undefined
+  const atomState = useContextSelector(StateContext, useCallback((state) => (
+    state.get(atom) as AtomState<Value> | undefined
   ), [atom]));
   useEffect(() => {
     dispatch({ type: 'INIT_ATOM', atom });
+    return () => {
+      dispatch({ type: 'DISPOSE_ATOM', atom });
+    };
   }, [dispatch, atom]);
-  if (suspendable && suspendable.promise) {
-    throw suspendable.promise;
+  if (atomState && atomState.extendablePromise) {
+    throw atomState.extendablePromise.promise;
   }
-  return suspendable === undefined ? atom.default : suspendable.value;
+  return atomState === undefined ? atom.default : atomState.value;
 }

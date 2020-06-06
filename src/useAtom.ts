@@ -6,7 +6,7 @@ import {
 } from 'react';
 import { useContext, useContextSelector } from 'use-context-selector';
 
-import { StateContext, DispatchContext, Suspendable } from './Provider';
+import { StateContext, DispatchContext, AtomState } from './Provider';
 import { Atom, WritableAtom } from './createAtom';
 
 const isWritable = (
@@ -18,10 +18,10 @@ export function useAtom<Value>(atom: Atom<Value>): [Value, never]
 
 export function useAtom<Value>(atom: Atom<Value> | WritableAtom<Value>) {
   const dispatch = useContext(DispatchContext);
-  const suspendable = useContextSelector(StateContext, useCallback((state) => (
-    state.values.get(atom) as Suspendable<Value> | undefined
+  const atomState = useContextSelector(StateContext, useCallback((state) => (
+    state.get(atom) as AtomState<Value> | undefined
   ), [atom]));
-  const setAtomState = useCallback((update: SetStateAction<Value>) => {
+  const setAtom = useCallback((update: SetStateAction<Value>) => {
     if (isWritable(atom)) {
       dispatch({ type: 'UPDATE_VALUE', atom, update });
     } else {
@@ -30,12 +30,15 @@ export function useAtom<Value>(atom: Atom<Value> | WritableAtom<Value>) {
   }, [atom, dispatch]);
   useEffect(() => {
     dispatch({ type: 'INIT_ATOM', atom });
+    return () => {
+      dispatch({ type: 'DISPOSE_ATOM', atom });
+    };
   }, [dispatch, atom]);
-  if (suspendable && suspendable.promise) {
-    throw suspendable.promise;
+  if (atomState && atomState.extendablePromise) {
+    throw atomState.extendablePromise.promise;
   }
   return [
-    suspendable === undefined ? atom.default : suspendable.value,
-    setAtomState,
+    atomState === undefined ? atom.default : atomState.value,
+    setAtom,
   ];
 }
