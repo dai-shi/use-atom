@@ -22,11 +22,15 @@ an atom doesn't require the string key.
 Hence, there's no support for persistant state
 and url encoded state (yet).
 
-Some other limitations:
-- useTransition doesn't work as expected
-- async `set` can't be in a transition
-- No way to clean up registered atoms
-- deriveAtom (= `selector` in Recoil) leads to `null` default value
+There are some limitations and observations:
+
+1. The default value of deriveAtom (= `selector` in Recoil) is `null`.
+2. At the very first `set`, we don't know the dependents and can't show pending.
+3. We can't do incremental loading (yet)
+4. The dependents can only be added and no deletion is possible.
+5. (Still to confirm) Possible race condition on `set`
+6. (Still to confirm) No pending on `set`
+7. (Still to confirm) Extra rerender in prod, no pending in dev.
 
 ## Install
 
