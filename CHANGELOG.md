@@ -1,8 +1,10 @@
 # Change Log
 
 ## [Unreleased]
+
+## [0.4.0] - 2020-06-07
 ### Changed
-- Improve logic (done with limitations in async)
+- Improve logic (With some limitations in async)
 
 ## [0.3.0] - 2020-05-30
 ### Changed
