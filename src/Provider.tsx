@@ -31,13 +31,8 @@ type UpdateAction = {
 
 type Action = InitAction | DisposeAction | UpdateAction;
 
-type ExtendablePromise<T> = {
-  pending: (() => Promise<T>)[];
-  promise: Promise<T>;
-};
-
 export type AtomState<Value> = {
-  extendablePromise: ExtendablePromise<void> | null;
+  promise: Promise<void> | null;
   value: Value; // this is mutable just once when promise is resolved
   used: number; // how many hooks are using
 };
@@ -90,9 +85,17 @@ const getAllDependents = (
   return dependents;
 };
 
-const getAtomStateValue = (state: State, a: Atom<unknown>) => {
-  const atomState = state.get(a);
-  return atomState ? atomState.value : a.default;
+const getAtomState = (state: State, atom: Atom<unknown>) => {
+  const atomState = state.get(atom);
+  if (!atomState) {
+    throw new Error('atom is not initialized');
+  }
+  return atomState;
+};
+
+const getAtomStateValue = (state: State, atom: Atom<unknown>) => {
+  const atomState = state.get(atom);
+  return atomState ? atomState.value : atom.default;
 };
 
 const setNewAtomValue = (
@@ -101,18 +104,14 @@ const setNewAtomValue = (
   value: unknown,
 ) => {
   setState((prev) => {
-    const atomState = prev.get(atom);
-    if (!atomState) {
-      throw new Error('atom is not initialized');
-    }
+    const atomState = getAtomState(prev, atom);
     return new Map(prev).set(atom, {
       ...atomState,
-      extendablePromise: null,
+      promise: null,
       value,
     });
   });
 };
-
 
 const initAtomState = (
   state: State,
@@ -130,30 +129,18 @@ const initAtomState = (
   } as any);
   let atomState: AtomState<unknown>;
   if (nextValue instanceof Promise) {
-    const extendablePromise: ExtendablePromise<void> = {
-      pending: [],
-      promise: new Promise<void>((resolve, reject) => {
-        let finalValue: unknown;
-        nextValue
-          .then((v) => {
-            finalValue = v;
-          })
-          .then(() => extendablePromise.pending.reduce((p, f) => p.then(f), Promise.resolve()))
-          .then(() => {
-            setNewAtomValue(setState, atom, finalValue);
-          })
-          .then(resolve)
-          .catch(reject);
-      }),
-    };
+    const promise = nextValue
+      .then((v) => {
+        setNewAtomValue(setState, atom, v);
+      });
     atomState = {
-      extendablePromise,
+      promise,
       value: atom.default,
       used: 1,
     };
   } else {
     atomState = {
-      extendablePromise: null,
+      promise: null,
       value: nextValue,
       used: 1,
     };
@@ -166,53 +153,19 @@ const updateValue = (
   setState: Dispatch<SetStateAction<State>>,
   action: UpdateAction,
 ) => {
-  const nextState = new Map(prevState);
-  const getValue = (a: Atom<unknown>) => getAtomStateValue(nextState, a);
-  const nextValue = typeof action.update === 'function' ? (
-    action.update(getValue(action.atom))
-  ) : (
-    action.update
-  );
-  const atomState = nextState.get(action.atom);
-  if (!atomState) {
-    throw new Error('atom is not initialized');
-  }
-  let nextAtomState: AtomState<unknown> | null = { ...atomState };
+  let currState = prevState;
+  const valuesToUpdate = new Map<Atom<unknown>, unknown>();
   const promises: Promise<void>[] = [];
-  const setValue = (atom: WritableAtom<unknown>, value: unknown) => {
-    const promise = atom.set({
-      get: getValue,
-      set: (a: WritableAtom<unknown>, v: unknown) => {
-        addSetDependent(a, action.atom);
-        if (a === action.atom) {
-          if (nextAtomState) {
-            nextAtomState.value = v;
-          } else {
-            setNewAtomValue(setState, action.atom, v);
-          }
-        } else {
-          setValue(a, v);
-        }
-      },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any, value);
-    if (promise instanceof Promise) {
-      promises.push(promise);
-    }
-  };
-  setValue(action.atom, nextValue);
-  const extendablePromise: ExtendablePromise<void> = {
-    pending: [],
-    promise: new Promise<void>((resolve, reject) => {
-      Promise.all(promises)
-        .then(() => extendablePromise.pending.reduce((p, f) => p.then(f), Promise.resolve()))
-        .then(resolve)
-        .catch(reject);
-    }),
-  };
-  nextAtomState.extendablePromise = extendablePromise;
-  nextState.set(action.atom, nextAtomState);
   const allDependents = getAllDependents(action.atom);
+
+  const getCurrAtomValue = (atom: Atom<unknown>) => {
+    if (valuesToUpdate.has(atom)) {
+      return valuesToUpdate.get(atom);
+    }
+    const atomState = currState.get(atom);
+    return atomState ? atomState.value : atom.default;
+  };
+
   const updateDependents = (atom: Atom<unknown>) => {
     const dependents = getDependents.get(atom) || new Set();
     if (dependents.size === 0) {
@@ -224,47 +177,96 @@ const updateValue = (
           if (a !== dependent) {
             addGetDependent(a, dependent);
           }
-          return getAtomStateValue(nextState, a);
+          return getCurrAtomValue(a);
         },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
-      const dependentState = nextState.get(dependent);
-      if (!dependentState) {
-        throw new Error('atom is not initialized');
-      }
-      const nextDependentState = { ...dependentState };
       if (v instanceof Promise) {
-        nextDependentState.extendablePromise = extendablePromise;
-        extendablePromise.pending.push(async () => {
-          setNewAtomValue(setState, dependent, await v);
-        });
+        promises.push(v.then((vv) => {
+          valuesToUpdate.set(dependent, vv);
+          allDependents.delete(dependent);
+        }));
       } else {
-        nextDependentState.value = v;
+        valuesToUpdate.set(dependent, v);
+        allDependents.delete(dependent);
       }
-      nextState.set(dependent, nextDependentState);
-      allDependents.delete(dependent);
       updateDependents(dependent);
     });
   };
-  updateDependents(action.atom);
-  if (!promises.length && !extendablePromise.pending.length) {
-    nextAtomState.extendablePromise = null;
-    allDependents.delete(action.atom);
-  } else {
-    const finalValue = nextAtomState.value;
-    extendablePromise.promise.then(() => {
-      setNewAtomValue(setState, action.atom, finalValue);
+
+  const updateAtomValue = (atom: Atom<unknown>, value: unknown) => {
+    valuesToUpdate.set(atom, value);
+    allDependents.delete(atom);
+    updateDependents(atom);
+  };
+
+  const setValue = (atom: WritableAtom<unknown>, value: unknown) => {
+    const promise = atom.set({
+      get: getCurrAtomValue,
+      set: (a: WritableAtom<unknown>, v: unknown) => {
+        addSetDependent(a, atom);
+        if (a === atom) {
+          updateAtomValue(atom, v);
+        } else {
+          setValue(a, v);
+        }
+      },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any, value);
+    if (promise instanceof Promise) {
+      promises.push(promise);
+    }
+  };
+
+  const nextValue = typeof action.update === 'function' ? (
+    action.update(getCurrAtomValue(action.atom))
+  ) : (
+    action.update
+  );
+  setValue(action.atom, nextValue);
+
+  const hasPromises = promises.length > 0;
+  const resolve = async () => {
+    if (promises.length) {
+      const promisesToWait = promises.splice(0, promises.length);
+      await Promise.all(promisesToWait);
+      await resolve();
+    } else {
+      if (allDependents.size !== 0) {
+        throw new Error('allDependents is not empty, maybe a bug');
+      }
+      setState((prev) => {
+        const nextState = new Map(prev);
+        valuesToUpdate.forEach((value, atom) => {
+          const atomState = getAtomState(nextState, atom);
+          nextState.set(atom, { ...atomState, promise: null, value });
+        });
+        return nextState;
+      });
+    }
+  };
+  const promise = resolve();
+
+  const nextState = new Map(currState);
+  if (hasPromises) {
+    promise.then(() => {
+      const atomState = getAtomState(nextState, action.atom);
+      nextState.set(action.atom, { ...atomState, promise: null });
     });
+    const atomState = getAtomState(nextState, action.atom);
+    nextState.set(action.atom, { ...atomState, promise });
   }
   allDependents.forEach((dependent) => {
-    const dependentState = nextState.get(dependent);
-    if (!dependentState) {
-      throw new Error('atom is not initialized');
-    }
-    nextState.set(dependent, { ...dependentState, extendablePromise });
+    const dependentState = getAtomState(nextState, dependent);
+    nextState.set(dependent, { ...dependentState, promise });
   });
-  nextAtomState = null;
-  return { nextState, extendablePromise };
+  valuesToUpdate.forEach((value, atom) => {
+    const atomState = getAtomState(nextState, atom);
+    nextState.set(atom, { ...atomState, promise: null, value });
+  });
+  valuesToUpdate.clear();
+  currState = nextState;
+  return nextState;
 };
 
 export const DispatchContext = createContext(warningObject as Dispatch<Action>);
@@ -278,47 +280,32 @@ export const Provider: React.FC = ({ children }) => {
       if (!atomState) {
         atomState = initAtomState(prevState, setState, action.atom);
       } else {
-        atomState = {
-          ...atomState,
-          used: atomState.used + 1,
-        };
+        atomState = { ...atomState, used: atomState.used + 1 };
       }
       return new Map(prevState).set(action.atom, atomState);
     }
     if (action.type === 'DISPOSE_ATOM') {
-      let atomState = prevState.get(action.atom);
-      if (!atomState) {
-        throw new Error('atom is not initialized');
-      }
+      let atomState = getAtomState(prevState, action.atom);
       if (atomState.used === 1) {
         const nextState = new Map(prevState);
         nextState.delete(action.atom);
         return nextState;
       }
-      atomState = {
-        ...atomState,
-        used: atomState.used - 1,
-      };
+      atomState = { ...atomState, used: atomState.used - 1 };
       return new Map(prevState).set(action.atom, atomState);
     }
     if (action.type === 'UPDATE_VALUE') {
-      const atomState = prevState.get(action.atom);
-      if (!atomState) {
-        throw new Error('atom is not initialized');
-      }
-      if (atomState.extendablePromise) {
-        atomState.extendablePromise.pending.push(async () => {
-          let promiseToWait = Promise.resolve();
+      const atomState = getAtomState(prevState, action.atom);
+      if (atomState.promise) {
+        const promise = atomState.promise.then(() => {
           setState((prev) => {
-            const { nextState, extendablePromise } = updateValue(prev, setState, action);
-            promiseToWait = extendablePromise.promise;
+            const nextState = updateValue(prev, setState, action);
             return nextState;
           });
-          await promiseToWait;
         });
-        return prevState;
+        return new Map(prevState).set(action.atom, { ...atomState, promise });
       }
-      const { nextState } = updateValue(prevState, setState, action);
+      const nextState = updateValue(prevState, setState, action);
       return nextState;
     }
     throw new Error('unexpected action type');

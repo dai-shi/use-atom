@@ -15,8 +15,8 @@ export function useAtomValue<Value>(atom: Atom<Value>) {
       dispatch({ type: 'DISPOSE_ATOM', atom });
     };
   }, [dispatch, atom]);
-  if (atomState && atomState.extendablePromise) {
-    throw atomState.extendablePromise.promise;
+  if (atomState && atomState.promise) {
+    throw atomState.promise;
   }
   return atomState === undefined ? atom.default : atomState.value;
 }
