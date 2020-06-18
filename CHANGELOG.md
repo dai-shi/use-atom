@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.5.0] - 2020-06-18
+### Changed
+- Fix initializing atom on demand
+
 ## [0.4.0] - 2020-06-07
 ### Changed
 - Improve logic (With some limitations in async)
