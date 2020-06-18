@@ -1,0 +1,37 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`derived spec counter 1`] = `
+<div>
+  <div>
+    <span>
+      0
+    </span>
+    <button
+      type="button"
+    >
+      +1
+    </button>
+    <span>
+      3
+    </span>
+  </div>
+</div>
+`;
+
+exports[`derived spec counter 2`] = `
+<div>
+  <div>
+    <span>
+      1
+    </span>
+    <button
+      type="button"
+    >
+      +1
+    </button>
+    <span>
+      5
+    </span>
+  </div>
+</div>
+`;

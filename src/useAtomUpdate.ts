@@ -13,9 +13,10 @@ export function useAtomUpdate<Value>(atom: WritableAtom<Value>) {
     });
   }, [atom, dispatch]);
   useEffect(() => {
-    dispatch({ type: 'INIT_ATOM', atom });
+    const id = Symbol();
+    dispatch({ type: 'INIT_ATOM', atom, id });
     return () => {
-      dispatch({ type: 'DISPOSE_ATOM', atom });
+      dispatch({ type: 'DISPOSE_ATOM', atom, id });
     };
   }, [dispatch, atom]);
   return setAtom;

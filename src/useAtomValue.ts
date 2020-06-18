@@ -6,17 +6,21 @@ import { Atom } from './createAtom';
 
 export function useAtomValue<Value>(atom: Atom<Value>) {
   const dispatch = useContext(DispatchContext);
-  const atomState = useContextSelector(StateContext, useCallback((state) => (
-    state.get(atom) as AtomState<Value> | undefined
-  ), [atom]));
+  const promiseOrValue = useContextSelector(StateContext, useCallback((state) => {
+    const atomState = state.get(atom) as AtomState<Value> | undefined;
+    if (!atomState) return atom.default;
+    if (atomState.promise) return atomState.promise;
+    return atomState.value;
+  }, [atom]));
   useEffect(() => {
-    dispatch({ type: 'INIT_ATOM', atom });
+    const id = Symbol();
+    dispatch({ type: 'INIT_ATOM', atom, id });
     return () => {
-      dispatch({ type: 'DISPOSE_ATOM', atom });
+      dispatch({ type: 'DISPOSE_ATOM', atom, id });
     };
   }, [dispatch, atom]);
-  if (atomState && atomState.promise) {
-    throw atomState.promise;
+  if (promiseOrValue instanceof Promise) {
+    throw promiseOrValue;
   }
-  return atomState === undefined ? atom.default : atomState.value;
+  return promiseOrValue;
 }

@@ -18,9 +18,12 @@ export function useAtom<Value>(atom: Atom<Value>): [Value, never]
 
 export function useAtom<Value>(atom: Atom<Value> | WritableAtom<Value>) {
   const dispatch = useContext(DispatchContext);
-  const atomState = useContextSelector(StateContext, useCallback((state) => (
-    state.get(atom) as AtomState<Value> | undefined
-  ), [atom]));
+  const promiseOrValue = useContextSelector(StateContext, useCallback((state) => {
+    const atomState = state.get(atom) as AtomState<Value> | undefined;
+    if (!atomState) return atom.default;
+    if (atomState.promise) return atomState.promise;
+    return atomState.value;
+  }, [atom]));
   const setAtom = useCallback((update: SetStateAction<Value>) => {
     if (isWritable(atom)) {
       dispatch({ type: 'UPDATE_VALUE', atom, update });
@@ -29,16 +32,17 @@ export function useAtom<Value>(atom: Atom<Value> | WritableAtom<Value>) {
     }
   }, [atom, dispatch]);
   useEffect(() => {
-    dispatch({ type: 'INIT_ATOM', atom });
+    const id = Symbol();
+    dispatch({ type: 'INIT_ATOM', atom, id });
     return () => {
-      dispatch({ type: 'DISPOSE_ATOM', atom });
+      dispatch({ type: 'DISPOSE_ATOM', atom, id });
     };
   }, [dispatch, atom]);
-  if (atomState && atomState.promise) {
-    throw atomState.promise;
+  if (promiseOrValue instanceof Promise) {
+    throw promiseOrValue;
   }
   return [
-    atomState === undefined ? atom.default : atomState.value,
+    promiseOrValue,
     setAtom,
   ];
 }
