@@ -86,6 +86,7 @@ function appendMap<K, V>(dst: Map<K, V>, src: Map<K, V>) {
   src.forEach((v, k) => {
     dst.set(k, v);
   });
+  return dst;
 }
 
 const initAtom = (
@@ -100,7 +101,7 @@ const initAtom = (
       ...atomState,
       getDependents: new Set(atomState.getDependents).add(dependent),
     };
-    return new Map([[atom, nextAtomState]]);
+    return new Map().set(atom, nextAtomState);
   }
   const updateState: State = new Map();
   let isSync = true;
@@ -110,10 +111,10 @@ const initAtom = (
         if (isSync) {
           appendMap(updateState, initAtom(prevState, setState, a, atom));
         } else {
-          setState((prev) => new Map([
-            ...prev,
-            ...initAtom(prev, setState, a, atom),
-          ]));
+          setState((prev) => appendMap(
+            new Map(prev),
+            initAtom(prev, setState, a, atom),
+          ));
         }
       }
       return getAtomStateValue(prevState, a);
@@ -205,10 +206,10 @@ const updateValue = (
             if (isSync) {
               appendMap(nextState, initAtom(prevState, setState, a, dependent));
             } else {
-              setState((prev) => new Map([
-                ...prev,
-                ...initAtom(prev, setState, a, dependent),
-              ]));
+              setState((prev) => appendMap(
+                new Map(prev),
+                initAtom(prev, setState, a, dependent),
+              ));
             }
           }
           return getCurrAtomValue(a);
@@ -324,7 +325,7 @@ export const Provider: React.FC = ({ children }) => {
   const dispatch = useCallback((action: Action) => setState((prevState) => {
     if (action.type === 'INIT_ATOM') {
       const updateState = initAtom(prevState, setState, action.atom, action.id);
-      return new Map([...prevState, ...updateState]);
+      return appendMap(new Map(prevState), updateState);
     }
     if (action.type === 'DISPOSE_ATOM') {
       return disposeAtom(prevState, action.id);
