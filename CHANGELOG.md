@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.5.2] - 2020-06-20
+### Changed
+- deriveAtom has non-null default with sync get
+
 ## [0.5.0] - 2020-06-18
 ### Changed
 - Fix initializing atom on demand
