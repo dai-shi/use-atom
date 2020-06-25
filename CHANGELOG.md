@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.5.3] - 2020-06-25
+### Changed
+- Fix the order of function overloads
+
 ## [0.5.2] - 2020-06-20
 ### Changed
 - deriveAtom has non-null default with sync get

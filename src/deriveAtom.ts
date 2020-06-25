@@ -4,18 +4,6 @@ export function deriveAtom<Value>(
   options: {
     get: (arg: {
       get: <V>(a: Atom<V>) => V;
-    }) => Value;
-    set: (arg: {
-      get: <V>(a: Atom<V>) => V;
-      set: <V>(a: WritableAtom<V>, v: V) => void;
-    }, newValue: Value) => void | Promise<void>;
-  },
-): WritableAtom<Value>;
-
-export function deriveAtom<Value>(
-  options: {
-    get: (arg: {
-      get: <V>(a: Atom<V>) => V;
     }) => Promise<Value>;
     set: (arg: {
       get: <V>(a: Atom<V>) => V;
@@ -29,8 +17,12 @@ export function deriveAtom<Value>(
     get: (arg: {
       get: <V>(a: Atom<V>) => V;
     }) => Value;
+    set: (arg: {
+      get: <V>(a: Atom<V>) => V;
+      set: <V>(a: WritableAtom<V>, v: V) => void;
+    }, newValue: Value) => void | Promise<void>;
   },
-): Atom<Value>;
+): WritableAtom<Value>;
 
 export function deriveAtom<Value>(
   options: {
@@ -39,6 +31,14 @@ export function deriveAtom<Value>(
     }) => Promise<Value>;
   },
 ): Atom<Value | null>;
+
+export function deriveAtom<Value>(
+  options: {
+    get: (arg: {
+      get: <V>(a: Atom<V>) => V;
+    }) => Value;
+  },
+): Atom<Value>;
 
 export function deriveAtom<Value>(
   options: {

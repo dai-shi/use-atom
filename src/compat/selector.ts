@@ -6,19 +6,6 @@ export function selector<Value>(
     key: string;
     get: (arg: {
       get: <V>(a: Atom<V>) => V;
-    }) => Value;
-    set: (arg: {
-      get: <V>(a: Atom<V>) => V;
-      set: <V>(a: WritableAtom<V>, v: V) => void;
-    }, newValue: Value) => void | Promise<void>;
-  },
-): WritableAtom<Value>;
-
-export function selector<Value>(
-  options: {
-    key: string;
-    get: (arg: {
-      get: <V>(a: Atom<V>) => V;
     }) => Promise<Value>;
     set: (arg: {
       get: <V>(a: Atom<V>) => V;
@@ -33,8 +20,12 @@ export function selector<Value>(
     get: (arg: {
       get: <V>(a: Atom<V>) => V;
     }) => Value;
+    set: (arg: {
+      get: <V>(a: Atom<V>) => V;
+      set: <V>(a: WritableAtom<V>, v: V) => void;
+    }, newValue: Value) => void | Promise<void>;
   },
-): Atom<Value>;
+): WritableAtom<Value>;
 
 export function selector<Value>(
   options: {
@@ -44,6 +35,15 @@ export function selector<Value>(
     }) => Promise<Value>;
   },
 ): Atom<Value | null>;
+
+export function selector<Value>(
+  options: {
+    key: string;
+    get: (arg: {
+      get: <V>(a: Atom<V>) => V;
+    }) => Value;
+  },
+): Atom<Value>;
 
 export function selector(options: unknown) {
   return deriveAtom(options as Parameters<typeof deriveAtom>[0]);
