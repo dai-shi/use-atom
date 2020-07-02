@@ -50,7 +50,9 @@ const getAllDependents = (
 ) => {
   const dependents = new Set<Atom<unknown>>();
   const appendSetDependents = (a: Atom<unknown>) => {
-    (state.get(a)?.setDependents || new Set()).forEach((dependent) => {
+    const aState = state.get(a);
+    if (!aState) return;
+    aState.setDependents.forEach((dependent) => {
       dependents.add(dependent);
       if (a !== dependent) {
         appendSetDependents(dependent);
@@ -59,7 +61,9 @@ const getAllDependents = (
   };
   appendSetDependents(atom);
   const appendGetDependents = (a: Atom<unknown>) => {
-    (state.get(a)?.getDependents || new Set()).forEach((dependent) => {
+    const aState = state.get(a);
+    if (!aState) return;
+    aState.getDependents.forEach((dependent) => {
       if (typeof dependent === 'symbol') return;
       dependents.add(dependent);
       appendGetDependents(dependent);
@@ -194,11 +198,9 @@ const updateValue = (
   };
 
   const updateDependents = (atom: Atom<unknown>) => {
-    const dependents = nextState.get(atom)?.getDependents || new Set();
-    if (dependents.size === 0) {
-      return;
-    }
-    dependents.forEach((dependent) => {
+    const atomState = nextState.get(atom);
+    if (!atomState) return;
+    atomState.getDependents.forEach((dependent) => {
       if (typeof dependent === 'symbol') return;
       const v = dependent.get({
         get: (a: Atom<unknown>) => {

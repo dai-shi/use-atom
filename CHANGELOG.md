@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.5.4] - 2020-07-02
+### Changed
+- Modern build
+
 ## [0.5.3] - 2020-06-25
 ### Changed
 - Fix the order of function overloads
