@@ -34,18 +34,18 @@ export function selector<Value>(
     key: string;
     get: (arg: {
       get: <V>(a: Atom<V>) => V;
-    }) => Promise<Value>;
+    }) => NonPromise<Value>;
   },
-): Atom<Value | null>;
+): Atom<Value>;
 
 export function selector<Value>(
   options: {
     key: string;
     get: (arg: {
       get: <V>(a: Atom<V>) => V;
-    }) => Value;
+    }) => Promise<Value>;
   },
-): Atom<Value>;
+): Atom<Value | null>;
 
 export function selector(options: unknown) {
   return deriveAtom(options as Parameters<typeof deriveAtom>[0]);

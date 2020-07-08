@@ -30,17 +30,17 @@ export function deriveAtom<Value>(
   options: {
     get: (arg: {
       get: <V>(a: Atom<V>) => V;
-    }) => Promise<Value>;
+    }) => NonPromise<Value>;
   },
-): Atom<Value | null>;
+): Atom<Value>;
 
 export function deriveAtom<Value>(
   options: {
     get: (arg: {
       get: <V>(a: Atom<V>) => V;
-    }) => Value;
+    }) => Promise<Value>;
   },
-): Atom<Value>;
+): Atom<Value | null>;
 
 export function deriveAtom<Value>(
   options: {
