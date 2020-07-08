@@ -1,5 +1,19 @@
 import { Atom, WritableAtom } from './createAtom';
 
+type NonPromise<T> = T extends Promise<unknown> ? never : T;
+
+export function deriveAtom<Value>(
+  options: {
+    get: (arg: {
+      get: <V>(a: Atom<V>) => V;
+    }) => NonPromise<Value>;
+    set: (arg: {
+      get: <V>(a: Atom<V>) => V;
+      set: <V>(a: WritableAtom<V>, v: V) => void;
+    }, newValue: Value) => void | Promise<void>;
+  },
+): WritableAtom<Value>;
+
 export function deriveAtom<Value>(
   options: {
     get: (arg: {
@@ -11,18 +25,6 @@ export function deriveAtom<Value>(
     }, newValue: Value) => void | Promise<void>;
   },
 ): WritableAtom<Value | null>;
-
-export function deriveAtom<Value>(
-  options: {
-    get: (arg: {
-      get: <V>(a: Atom<V>) => V;
-    }) => Value;
-    set: (arg: {
-      get: <V>(a: Atom<V>) => V;
-      set: <V>(a: WritableAtom<V>, v: V) => void;
-    }, newValue: Value) => void | Promise<void>;
-  },
-): WritableAtom<Value>;
 
 export function deriveAtom<Value>(
   options: {
