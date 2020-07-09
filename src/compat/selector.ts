@@ -14,7 +14,7 @@ export function selector<Value>(
       set: <V>(a: WritableAtom<V>, v: V) => void;
     }, newValue: Value) => void | Promise<void>;
   },
-): WritableAtom<Value>;
+): WritableAtom<Value> & { key: string };
 
 export function selector<Value>(
   options: {
@@ -27,7 +27,7 @@ export function selector<Value>(
       set: <V>(a: WritableAtom<V>, v: V) => void;
     }, newValue: Value) => void | Promise<void>;
   },
-): WritableAtom<Value | null>;
+): WritableAtom<Value | null> & { key: string };
 
 export function selector<Value>(
   options: {
@@ -36,7 +36,7 @@ export function selector<Value>(
       get: <V>(a: Atom<V>) => V;
     }) => NonPromise<Value>;
   },
-): Atom<Value>;
+): Atom<Value> & { key: string };
 
 export function selector<Value>(
   options: {
@@ -45,7 +45,7 @@ export function selector<Value>(
       get: <V>(a: Atom<V>) => V;
     }) => Promise<Value>;
   },
-): Atom<Value | null>;
+): Atom<Value | null> & { key: string };
 
 export function selector(options: unknown) {
   return deriveAtom(options as Parameters<typeof deriveAtom>[0]);
