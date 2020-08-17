@@ -20,17 +20,16 @@ and Recoil subset API of them.
 One of the biggest difference from Recoil is
 an atom doesn't require the string key.
 Hence, there's no support for persistant state
-and url encoded state (yet).
+and url encoded state.
 
 There are some limitations and observations:
 
 1. The default value of deriveAtom (= `selector` in Recoil) is `null`.
-2. At the very first `set`, we don't know the dependents and can't show pending.
-3. We can't do incremental loading (yet)
-4. The dependents can only be added and no deletion is possible.
-5. (Still to confirm) Possible race condition on `set`
-6. (Still to confirm) No pending on `set`
-7. (Still to confirm) Extra rerender in prod, no pending in dev.
+1. At the very first `set`, we don't know the dependents and can't show pending.
+1. We can't do incremental loading.
+1. The dependents can only be added and no deletion is possible.
+1. (Still to confirm) No pending on `set`.
+1. (Still to confirm) Extra rerender in prod, no pending in dev.
 
 ## Install
 

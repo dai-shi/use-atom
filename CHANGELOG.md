@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.5.7] - 2020-08-18
+### Changed
+- Fix a bug in set dependents
+
 ## [0.5.6] - 2020-07-08
 ### Changed
 - Fix the order of function overloads again
