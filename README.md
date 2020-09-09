@@ -1,3 +1,7 @@
+This project has been transferred to the new project and much **improved**: https://github.com/react-spring/jotai
+
+----
+
 # use-atom
 
 [![CI](https://img.shields.io/github/workflow/status/dai-shi/use-atom/CI)](https://github.com/dai-shi/use-atom/actions?query=workflow%3ACI)
