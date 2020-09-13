@@ -1,4 +1,5 @@
-This project has been transferred to the new project and much **improved**: https://github.com/react-spring/jotai
+This project has been transferred to a new project and much **improved**.  
+:point_right: https://github.com/react-spring/jotai
 
 ----
 
