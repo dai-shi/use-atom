@@ -1,6 +1,5 @@
 export { Provider } from './Provider';
-export { createAtom } from './createAtom';
-export { deriveAtom } from './deriveAtom';
+export { atom } from './atom';
 export { useAtom } from './useAtom';
 export { useAtomValue } from './useAtomValue';
-export { useAtomUpdate } from './useAtomUpdate';
+export { useUpdateAtom } from './useUpdateAtom';

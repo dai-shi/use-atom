@@ -1,6 +1,10 @@
 # Change Log
 
 ## [Unreleased]
+### Added
+- Jotai compatible API
+### Removed
+- Recoil compatible API
 
 ## [0.5.7] - 2020-08-18
 ### Changed

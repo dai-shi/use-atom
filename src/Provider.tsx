@@ -6,7 +6,7 @@ import React, {
 } from 'react';
 import { createContext } from 'use-context-selector';
 
-import { Atom, WritableAtom } from './createAtom';
+import { Atom, WritableAtom } from './atom';
 
 const warningObject = new Proxy({}, {
   get() { throw new Error('Please use <Provider>'); },
@@ -35,7 +35,7 @@ type Action = InitAction | DisposeAction | UpdateAction;
 
 export type AtomState<Value> = {
   promise: Promise<void> | null;
-  value: Value;
+  value?: Value;
   getDependents: Set<Atom<unknown> | symbol>; // symbol is id from INIT_ATOM
   setDependents: Set<Atom<unknown>>;
 };
@@ -81,9 +81,15 @@ const getAtomState = (state: State, atom: Atom<unknown>) => {
   return atomState;
 };
 
-const getAtomStateValue = (state: State, atom: Atom<unknown>) => {
+const getAtomStateValue = <V, >(state: State, atom: Atom<V>) => {
   const atomState = state.get(atom);
-  return atomState ? atomState.value : atom.default;
+  if (atomState) {
+    return atomState.value as V;
+  }
+  if ('init' in atom) {
+    return atom.init as V;
+  }
+  throw new Error('no atom init');
 };
 
 function appendMap<K, V>(dst: Map<K, V>, src: Map<K, V>) {
@@ -109,33 +115,28 @@ const initAtom = (
   }
   const updateState: State = new Map();
   let isSync = true;
-  const nextValue = atom.get({
-    get: (a: Atom<unknown>) => {
-      if (a !== atom) {
-        if (isSync) {
-          appendMap(updateState, initAtom(prevState, setState, a, atom));
-        } else {
-          setState((prev) => appendMap(
-            new Map(prev),
-            initAtom(prev, setState, a, atom),
-          ));
-        }
+  const nextValue = atom.read(<V, >(a: Atom<V>) => {
+    if (a !== atom) {
+      if (isSync) {
+        appendMap(updateState, initAtom(prevState, setState, a, atom));
+      } else {
+        setState((prev) => appendMap(
+          new Map(prev),
+          initAtom(prev, setState, a, atom),
+        ));
       }
-      return getAtomStateValue(prevState, a);
-    },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } as any);
+    }
+    return getAtomStateValue(prevState, a);
+  });
   if (nextValue instanceof Promise) {
     const promise = nextValue.then((value) => {
       setState((prev) => new Map(prev).set(atom, {
         ...getAtomState(prev, atom),
-        promise: null,
         value,
       }));
     });
     atomState = {
       promise,
-      value: atom.default,
       getDependents: new Set(),
       setDependents: new Set(),
     };
@@ -189,12 +190,11 @@ const updateValue = (
   const promises: Promise<void>[] = [];
   const allDependents = getAllDependents(nextState, action.atom);
 
-  const getCurrAtomValue = (atom: Atom<unknown>) => {
+  const getCurrAtomValue = <V, >(atom: Atom<V>) => {
     if (valuesToUpdate.has(atom)) {
-      return valuesToUpdate.get(atom);
+      return valuesToUpdate.get(atom) as V;
     }
-    const atomState = nextState.get(atom);
-    return atomState ? atomState.value : atom.default;
+    return getAtomStateValue(nextState, atom);
   };
 
   const updateDependents = (atom: Atom<unknown>) => {
@@ -202,22 +202,19 @@ const updateValue = (
     if (!atomState) return;
     atomState.getDependents.forEach((dependent) => {
       if (typeof dependent === 'symbol') return;
-      const v = dependent.get({
-        get: (a: Atom<unknown>) => {
-          if (a !== dependent) {
-            if (isSync) {
-              appendMap(nextState, initAtom(prevState, setState, a, dependent));
-            } else {
-              setState((prev) => appendMap(
-                new Map(prev),
-                initAtom(prev, setState, a, dependent),
-              ));
-            }
+      const v = dependent.read(<V, >(a: Atom<V>) => {
+        if (a !== dependent) {
+          if (isSync) {
+            appendMap(nextState, initAtom(prevState, setState, a, dependent));
+          } else {
+            setState((prev) => appendMap(
+              new Map(prev),
+              initAtom(prev, setState, a, dependent),
+            ));
           }
-          return getCurrAtomValue(a);
-        },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any);
+        }
+        return getCurrAtomValue(a);
+      });
       if (v instanceof Promise) {
         promises.push(v.then((vv) => {
           valuesToUpdate.set(dependent, vv);
@@ -237,10 +234,10 @@ const updateValue = (
     updateDependents(atom);
   };
 
-  const setValue = (atom: WritableAtom<unknown>, value: unknown) => {
-    const promise = atom.set({
-      get: getCurrAtomValue,
-      set: (a: WritableAtom<unknown>, v: unknown) => {
+  const setValue = <Value, >(atom: WritableAtom<Value>, value: Value) => {
+    const promise = atom.write(
+      getCurrAtomValue,
+      <V, >(a: WritableAtom<V>, v: V) => {
         if (isSync) {
           const atomState = getAtomState(nextState, atom);
           nextState.set(atom, {
@@ -256,14 +253,14 @@ const updateValue = (
             });
           });
         }
-        if (a === atom) {
+        if (a === atom as unknown as WritableAtom<V>) {
           updateAtomValue(atom, v);
         } else {
           setValue(a, v);
         }
       },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any, value);
+      value,
+    );
     if (promise instanceof Promise) {
       promises.push(promise);
     }
