@@ -2,14 +2,14 @@
 // @ts-ignore
 import React, { unstable_useTransition as useTransition } from 'react';
 
-import { useRecoilState, useSetRecoilState } from 'use-atom';
+import { useAtom, useUpdateAtom } from 'use-atom';
 
 import { counts, delayedTotal, delayedUpdate1 } from './state';
 
 const Item: React.FC<{
   count: (typeof counts)[number];
 }> = ({ count }) => {
-  const [value, setValue] = useRecoilState(count);
+  const [value, setValue] = useAtom(count);
   const [startTransiton, isPending] = useTransition({ timeoutMs: 2000 });
   const increment = () => {
     startTransiton(() => {
@@ -27,7 +27,7 @@ const Item: React.FC<{
 };
 
 const Total: React.FC = () => {
-  const [value] = useRecoilState(delayedTotal);
+  const [value] = useAtom(delayedTotal);
   return (
     <div>
       <span>Total (delayed): {value}</span>
@@ -37,7 +37,7 @@ const Total: React.FC = () => {
 };
 
 const Update1: React.FC = () => {
-  const setValue = useSetRecoilState(delayedUpdate1);
+  const setValue = useUpdateAtom(delayedUpdate1);
   const [startTransiton, isPending] = useTransition({ timeoutMs: 2000 });
   const decrement = () => {
     startTransiton(() => {
@@ -59,7 +59,7 @@ const Counter: React.FC = () => (
     <Update1 />
     <ul>
       {counts.map((count) => (
-        <Item key={count.key} count={count} />
+        <Item count={count} />
       ))}
     </ul>
     <Total />

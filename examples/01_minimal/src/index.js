@@ -1,13 +1,13 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-import { RecoilRoot, atom, useRecoilState } from 'use-atom';
+import { Provider, atom, useAtom } from 'use-atom';
 
-const countAtom = atom({ key: 'count', default: 0 });
-const textAtom = atom({ key: 'text', default: 'hello' });
+const countAtom = atom(0);
+const textAtom = atom('hello');
 
 const Counter = () => {
-  const [count, setCount] = useRecoilState(countAtom);
+  const [count, setCount] = useAtom(countAtom);
   return (
     <div>
       {Math.random()}
@@ -21,7 +21,7 @@ const Counter = () => {
 };
 
 const TextBox = () => {
-  const [text, setText] = useRecoilState(textAtom);
+  const [text, setText] = useAtom(textAtom);
   return (
     <div>
       {Math.random()}
@@ -34,14 +34,14 @@ const TextBox = () => {
 };
 
 const App = () => (
-  <RecoilRoot>
+  <Provider>
     <h1>Counter</h1>
     <Counter />
     <Counter />
     <h1>TextBox</h1>
     <TextBox />
     <TextBox />
-  </RecoilRoot>
+  </Provider>
 );
 
 ReactDOM.unstable_createRoot(document.getElementById('app')).render(<App />);

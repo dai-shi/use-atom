@@ -1,9 +1,9 @@
-import { createAtom, deriveAtom, useAtom } from '../src/index';
+import { Provider, atom, useAtom } from '../src/index';
 
 describe('basic spec', () => {
   it('exported function', () => {
-    expect(createAtom).toBeDefined();
-    expect(deriveAtom).toBeDefined();
+    expect(Provider).toBeDefined();
+    expect(atom).toBeDefined();
     expect(useAtom).toBeDefined();
   });
 });
