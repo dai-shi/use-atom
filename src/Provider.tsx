@@ -36,42 +36,12 @@ type Action = InitAction | DisposeAction | UpdateAction;
 export type AtomState<Value> = {
   promise: Promise<void> | null;
   value?: Value;
-  getDependents: Set<Atom<unknown> | symbol>; // symbol is id from INIT_ATOM
-  setDependents: Set<Atom<unknown>>;
+  dependents: Set<Atom<unknown> | symbol>; // symbol is id from INIT_ATOM
 };
 
 type State = Map<Atom<unknown>, AtomState<unknown>>;
 
 const initialState: State = new Map();
-
-const getAllDependents = (
-  state: State,
-  atom: Atom<unknown>,
-) => {
-  const dependents = new Set<Atom<unknown>>();
-  const appendSetDependents = (a: Atom<unknown>) => {
-    const aState = state.get(a);
-    if (!aState) return;
-    aState.setDependents.forEach((dependent) => {
-      dependents.add(dependent);
-      if (a !== dependent) {
-        appendSetDependents(dependent);
-      }
-    });
-  };
-  appendSetDependents(atom);
-  const appendGetDependents = (a: Atom<unknown>) => {
-    const aState = state.get(a);
-    if (!aState) return;
-    aState.getDependents.forEach((dependent) => {
-      if (typeof dependent === 'symbol') return;
-      dependents.add(dependent);
-      appendGetDependents(dependent);
-    });
-  };
-  Array.from(dependents).forEach(appendGetDependents);
-  return dependents;
-};
 
 const getAtomState = (state: State, atom: Atom<unknown>) => {
   const atomState = state.get(atom);
@@ -109,7 +79,7 @@ const initAtom = (
   if (atomState) {
     const nextAtomState = {
       ...atomState,
-      getDependents: new Set(atomState.getDependents).add(dependent),
+      dependents: new Set(atomState.dependents).add(dependent),
     };
     return new Map().set(atom, nextAtomState);
   }
@@ -137,18 +107,16 @@ const initAtom = (
     });
     atomState = {
       promise,
-      getDependents: new Set(),
-      setDependents: new Set(),
+      dependents: new Set(),
     };
   } else {
     atomState = {
       promise: null,
       value: nextValue,
-      getDependents: new Set(),
-      setDependents: new Set(),
+      dependents: new Set(),
     };
   }
-  atomState.getDependents.add(dependent);
+  atomState.dependents.add(dependent);
   updateState.set(atom, atomState);
   isSync = false;
   return updateState;
@@ -161,13 +129,13 @@ const disposeAtom = (
   let nextState = new Map(prevState);
   const deleted: Atom<unknown>[] = [];
   nextState.forEach((atomState, atom) => {
-    if (atomState.getDependents.has(dependent)) {
-      const nextGetDependents = new Set(atomState.getDependents);
+    if (atomState.dependents.has(dependent)) {
+      const nextGetDependents = new Set(atomState.dependents);
       nextGetDependents.delete(dependent);
       if (nextGetDependents.size) {
         nextState.set(atom, {
           ...atomState,
-          getDependents: nextGetDependents,
+          dependents: nextGetDependents,
         });
       } else {
         nextState.delete(atom);
@@ -188,7 +156,6 @@ const updateValue = (
   let isSync = true;
   const valuesToUpdate = new Map<Atom<unknown>, unknown>();
   const promises: Promise<void>[] = [];
-  const allDependents = getAllDependents(nextState, action.atom);
 
   const getCurrAtomValue = <V, >(atom: Atom<V>) => {
     if (valuesToUpdate.has(atom)) {
@@ -200,7 +167,7 @@ const updateValue = (
   const updateDependents = (atom: Atom<unknown>) => {
     const atomState = nextState.get(atom);
     if (!atomState) return;
-    atomState.getDependents.forEach((dependent) => {
+    atomState.dependents.forEach((dependent) => {
       if (typeof dependent === 'symbol') return;
       const v = dependent.read(<V, >(a: Atom<V>) => {
         if (a !== dependent) {
@@ -218,11 +185,9 @@ const updateValue = (
       if (v instanceof Promise) {
         promises.push(v.then((vv) => {
           valuesToUpdate.set(dependent, vv);
-          allDependents.delete(dependent);
         }));
       } else {
         valuesToUpdate.set(dependent, v);
-        allDependents.delete(dependent);
       }
       updateDependents(dependent);
     });
@@ -230,7 +195,6 @@ const updateValue = (
 
   const updateAtomValue = (atom: Atom<unknown>, value: unknown) => {
     valuesToUpdate.set(atom, value);
-    allDependents.delete(atom);
     updateDependents(atom);
   };
 
@@ -238,21 +202,6 @@ const updateValue = (
     const promise = atom.write(
       getCurrAtomValue,
       <V, >(a: WritableAtom<V>, v: V) => {
-        if (isSync) {
-          const atomState = getAtomState(nextState, atom);
-          nextState.set(atom, {
-            ...atomState,
-            setDependents: new Set(atomState.setDependents).add(a),
-          });
-        } else {
-          setState((prev) => {
-            const atomState = getAtomState(prev, atom);
-            return new Map(prev).set(atom, {
-              ...atomState,
-              setDependents: new Set(atomState.setDependents).add(a),
-            });
-          });
-        }
         if (a === atom as unknown as WritableAtom<V>) {
           updateAtomValue(atom, v);
         } else {
@@ -280,9 +229,6 @@ const updateValue = (
       await Promise.all(promisesToWait);
       await resolve();
     } else {
-      if (allDependents.size !== 0) {
-        throw new Error('allDependents is not empty, maybe a bug');
-      }
       setState((prev) => {
         const nextS = new Map(prev);
         valuesToUpdate.forEach((value, atom) => {
@@ -303,10 +249,6 @@ const updateValue = (
     const atomState = getAtomState(nextState, action.atom);
     nextState.set(action.atom, { ...atomState, promise });
   }
-  allDependents.forEach((dependent) => {
-    const dependentState = getAtomState(nextState, dependent);
-    nextState.set(dependent, { ...dependentState, promise });
-  });
   valuesToUpdate.forEach((value, atom) => {
     const atomState = getAtomState(nextState, atom);
     nextState.set(atom, { ...atomState, promise: null, value });

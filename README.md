@@ -17,6 +17,7 @@ There are some limitations and observations:
 
 1. (again) `write` must be a pure function.
 1. async write doesn't suspend.
+1. async write error is not handled properly. (fixable)
 1. `write` can only accepts new value. (maybe fixable)
 
 ## Install
