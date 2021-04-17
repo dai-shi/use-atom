@@ -8,6 +8,9 @@ import { createContext } from 'use-context-selector';
 
 import { Atom, WritableAtom } from './atom';
 
+const PROMISE_RESULT = Symbol();
+const PROMISE_ERROR = Symbol();
+
 const warningObject = new Proxy({}, {
   get() { throw new Error('Please use <Provider>'); },
   apply() { throw new Error('Please use <Provider>'); },
@@ -34,7 +37,7 @@ type UpdateAction = {
 type Action = InitAction | DisposeAction | UpdateAction;
 
 type AtomState<Value> = {
-  promise: Promise<void> | null;
+  promise: Promise<Value> | null;
   value?: Value;
   dependents: Set<Atom<unknown> | symbol>; // symbol is id from INIT_ATOM
 };
@@ -57,7 +60,15 @@ export const getAtomStateValue = <Value, >(state: State, atom: Atom<Value>) => {
     if ('init' in atom) return atom.init as Value;
     throw new Error('no atom init');
   }
-  if (atomState.promise) throw atomState.promise;
+  if (atomState.promise) {
+    const {
+      [PROMISE_RESULT]: result,
+      [PROMISE_ERROR]: error,
+    } = atomState.promise as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+    if (error) throw error;
+    if (result) return result as Value;
+    throw atomState.promise;
+  }
   if ('value' in atomState) return atomState.value as Value;
   throw new Error('no atom value');
 };
