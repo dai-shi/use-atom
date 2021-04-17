@@ -13,12 +13,13 @@ It's now rewritten to follow jotai API and depends on
 [use-context-selector](https://github.com/dai-shi/use-context-selector).
 The biggest difference is that side effects in `write` is not allowed.
 
-There are some limitations and observations:
+There are some limitations:
 
 1. (again) `write` must be a pure function.
 1. async write doesn't suspend.
 1. async write error is not handled properly. (fixable)
 1. `write` can only accepts new value. (maybe fixable)
+1. dependents are only added. (maybe fixable)
 
 ## Install
 

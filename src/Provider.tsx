@@ -33,7 +33,7 @@ type UpdateAction = {
 
 type Action = InitAction | DisposeAction | UpdateAction;
 
-export type AtomState<Value> = {
+type AtomState<Value> = {
   promise: Promise<void> | null;
   value?: Value;
   dependents: Set<Atom<unknown> | symbol>; // symbol is id from INIT_ATOM
@@ -43,23 +43,23 @@ type State = Map<Atom<unknown>, AtomState<unknown>>;
 
 const initialState: State = new Map();
 
-const getAtomState = (state: State, atom: Atom<unknown>) => {
-  const atomState = state.get(atom);
+const getAtomState = <Value, >(state: State, atom: Atom<Value>) => {
+  const atomState = state.get(atom) as AtomState<Value> | undefined;
   if (!atomState) {
     throw new Error('atom is not initialized');
   }
   return atomState;
 };
 
-const getAtomStateValue = <V, >(state: State, atom: Atom<V>) => {
-  const atomState = state.get(atom);
-  if (atomState) {
-    return atomState.value as V;
+export const getAtomStateValue = <Value, >(state: State, atom: Atom<Value>) => {
+  const atomState = state.get(atom) as AtomState<Value> | undefined;
+  if (!atomState) {
+    if ('init' in atom) return atom.init as Value;
+    throw new Error('no atom init');
   }
-  if ('init' in atom) {
-    return atom.init as V;
-  }
-  throw new Error('no atom init');
+  if (atomState.promise) throw atomState.promise;
+  if ('value' in atomState) return atomState.value as Value;
+  throw new Error('no atom value');
 };
 
 function appendMap<K, V>(dst: Map<K, V>, src: Map<K, V>) {
@@ -157,11 +157,18 @@ const updateValue = (
   const valuesToUpdate = new Map<Atom<unknown>, unknown>();
   const promises: Promise<void>[] = [];
 
-  const getCurrAtomValue = <V, >(atom: Atom<V>) => {
+  const getCurrAtomValue = <Value, >(atom: Atom<Value>) => {
     if (valuesToUpdate.has(atom)) {
-      return valuesToUpdate.get(atom) as V;
+      return valuesToUpdate.get(atom) as Value;
     }
-    return getAtomStateValue(nextState, atom);
+    const atomState = nextState.get(atom) as AtomState<Value> | undefined;
+    if (atomState) {
+      if ('value' in atomState) return atomState.value as Value;
+    }
+    if ('init' in atom) {
+      return atom.init as Value;
+    }
+    throw new Error('no atom init');
   };
 
   const updateDependents = (atom: Atom<unknown>) => {
