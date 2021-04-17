@@ -8,7 +8,7 @@ export type WritableAtom<Value> = Atom<Value> & {
     get: <V>(a: Atom<V>) => V,
     set: <V>(a: WritableAtom<V>, v: V) => void,
     newValue: Value
-  ) => void | Promise<void>;
+  ) => void;
 }
 
 export function atom<Value>(
@@ -17,7 +17,7 @@ export function atom<Value>(
     get: <V>(a: Atom<V>) => V,
     set: <V>(a: WritableAtom<V>, v: V) => void,
     newValue: Value,
-  ) => void | Promise<void>,
+  ) => void,
 ): WritableAtom<Value>;
 
 export function atom<Value>(
@@ -34,7 +34,7 @@ export function atom<Value>(
     get: <V>(a: Atom<V>) => V,
     set: <V>(a: WritableAtom<V>, v: V) => void,
     newValue: Value,
-  ) => void | Promise<void>,
+  ) => void,
 ) {
   if (typeof read !== 'function') {
     const a: WritableAtom<Value> = {

@@ -1,14 +1,14 @@
 import { useCallback, useEffect } from 'react';
 import { useContext, useContextSelector } from 'use-context-selector';
 
-import { StateContext, DispatchContext, getAtomStateValue } from './Provider';
+import { StateContext, DispatchContext, readAtomValue } from './Provider';
 import { Atom } from './atom';
 
 export function useAtomValue<Value>(atom: Atom<Value>) {
   const dispatch = useContext(DispatchContext);
   const value = useContextSelector(
     StateContext,
-    useCallback((state) => getAtomStateValue(state, atom), [atom]),
+    useCallback((state) => readAtomValue(state, atom), [atom]),
   );
   useEffect(() => {
     const id = Symbol();
