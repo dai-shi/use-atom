@@ -4,7 +4,7 @@
 [![npm](https://img.shields.io/npm/v/use-atom)](https://www.npmjs.com/package/use-atom)
 [![size](https://img.shields.io/bundlephobia/minzip/use-atom)](https://bundlephobia.com/result?p=use-atom)
 
-Jotai like library without side effects
+Jotai like library without side effects and async
 
 ## Introduction
 
@@ -12,13 +12,7 @@ This library used to be a former library to [jotai](https://github.com/pmndrs/jo
 It's now rewritten to follow jotai API and depends on
 [use-context-selector](https://github.com/dai-shi/use-context-selector).
 The biggest difference is that side effects in `write` is not allowed.
-
-There are some limitations:
-
-1. (again) `write` must be a pure function.
-1. async write doesn't suspend.
-1. `write` can only accepts new value. (maybe fixable)
-1. dependents are only added. (maybe fixable)
+Suspense is not supported as it also requires side effects.
 
 ## Install
 

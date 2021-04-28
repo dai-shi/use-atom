@@ -1,28 +1,7 @@
-import React, {
-  Dispatch,
-  SetStateAction,
-  useCallback,
-  useState,
-} from 'react';
+import React, { useCallback, useState } from 'react';
 import { createContext } from 'use-context-selector';
 
 import { Atom, WritableAtom } from './atom';
-
-const PROMISE_RESULT = Symbol();
-const PROMISE_ERROR = Symbol();
-
-const patchPromise = <Value, >(promise: Promise<Value>) => {
-  promise.then((value) => {
-    // eslint-disable-next-line
-    (promise as any)[PROMISE_RESULT] = value;
-    return value;
-  }).catch((err) => {
-    // eslint-disable-next-line
-    (promise as any)[PROMISE_ERROR] = err;
-    throw err;
-  });
-  return promise;
-};
 
 const warningObject = new Proxy({}, {
   get() { throw new Error('Please use <Provider>'); },
@@ -43,22 +22,18 @@ type DisposeAction = {
 
 type UpdateAction = {
   type: 'UPDATE_VALUE';
-  atom: WritableAtom<unknown>;
-  update: SetStateAction<unknown>;
+  atom: WritableAtom<unknown, unknown>;
+  update: unknown;
 };
 
 type Action = InitAction | DisposeAction | UpdateAction;
 
 type AtomState<Value> = {
-  promise: Promise<Value> | null;
   value?: Value;
   dependents: Set<Atom<unknown> | symbol>; // symbol is id from INIT_ATOM
 };
 
-type State = {
-  atoms: Map<Atom<unknown>, AtomState<unknown>>; // immutable
-  pending: Map<Atom<unknown>, AtomState<unknown>>; // mutable
-};
+type State = Map<Atom<unknown>, AtomState<unknown>>; // immutable map
 
 const appendMap = <K, V>(dst: Map<K, V>, src: Map<K, V>) => {
   src.forEach((v, k) => { dst.set(k, v); });
@@ -66,59 +41,23 @@ const appendMap = <K, V>(dst: Map<K, V>, src: Map<K, V>) => {
 };
 
 const getAtomState = <Value, >(state: State, atom: Atom<Value>) => {
-  const atomState = (
-    state.atoms.get(atom) || state.pending.get(atom)
-  ) as AtomState<Value> | undefined;
+  const atomState = state.get(atom) as AtomState<Value> | undefined;
   if (atomState) return atomState;
-  try {
-    const dependents = new Set<Atom<unknown>>();
-    const value = atom.read(<V, >(a: Atom<V>) => {
-      if (a !== atom as unknown as Atom<V>) {
-        dependents.add(a);
-        return readAtomValue(state, a);
-      }
-      if ('init' in a) return a.init as V;
-      throw new Error('no atom init');
-    });
-    const newAtomState: AtomState<Value> = value instanceof Promise ? {
-      promise: patchPromise(value),
-      dependents,
-    } : {
-      promise: null,
-      value,
-      dependents,
-    };
-    state.pending.set(atom, newAtomState);
-    return newAtomState;
-  } catch (e) {
-    if (e instanceof Promise) {
-      const newAtomState: AtomState<Value> = {
-        promise: patchPromise(e.then(() => {
-          const nextAtomState = getAtomState(state, atom);
-          if (nextAtomState.promise) return nextAtomState.promise;
-          if ('value' in nextAtomState) return nextAtomState.value as Value;
-          throw new Error('no atom value');
-        })),
-        dependents: new Set(),
-      };
-      state.pending.set(atom, newAtomState);
-      return newAtomState;
+  const dependents = new Set<Atom<unknown>>();
+  const value = atom.read(<V, >(a: Atom<V>) => {
+    if (a !== atom as unknown as Atom<V>) {
+      dependents.add(a);
+      return readAtomValue(state, a);
     }
-    throw e;
-  }
+    if ('init' in a) return a.init as V;
+    throw new Error('no atom init');
+  });
+  const newAtomState: AtomState<Value> = { value, dependents };
+  return newAtomState;
 };
 
 export const readAtomValue = <Value, >(state: State, atom: Atom<Value>) => {
   const atomState = getAtomState(state, atom);
-  if (atomState.promise) {
-    const {
-      [PROMISE_RESULT]: result,
-      [PROMISE_ERROR]: error,
-    } = atomState.promise as any; // eslint-disable-line @typescript-eslint/no-explicit-any
-    if (error) throw error;
-    if (result) return result as Value;
-    throw atomState.promise;
-  }
   if ('value' in atomState) return atomState.value as Value;
   throw new Error('no atom value');
 };
@@ -172,10 +111,10 @@ const disposeAtom = (
   return nextState;
 };
 
-const writeAtomValue = <Value, >(
-  setState: Dispatch<SetStateAction<State>>,
-  atom: WritableAtom<Value>,
-  newValue: Value,
+const writeAtomValue = <Value, Update>(
+  setState: (prev: State) => State,
+  atom: WritableAtom<Value, Update>,
+  update: Update,
 ) => {
   let tasks: (() => void)[] | false = [];
   setState((prevState) => {
@@ -187,11 +126,11 @@ const writeAtomValue = <Value, >(
   tasks = false;
 };
 
-const updateValue = (
+const updateValue = <Value, Update>(
   prevState: State,
-  setState: Dispatch<SetStateAction<State>>,
-  atom: WritableAtom<unknown>,
-  update: SetStateAction<unknown>,
+  setState: (prev: State) => State,
+  atom: WritableAtom<Value, Update>,
+  update: Update,
 ) => {
   const atoms = new Map(prevState.atoms);
   let isSync = true;
