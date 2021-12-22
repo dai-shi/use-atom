@@ -1,6 +1,7 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-import React, { unstable_useTransition as useTransition } from 'react';
+// eslint-disable-next-line spaced-comment
+/// <reference types="react/next" />
+
+import React, { useTransition } from 'react';
 
 import { useAtom, useSetAtom } from 'use-atom';
 
@@ -10,7 +11,7 @@ const Item: React.FC<{
   count: (typeof counts)[number];
 }> = ({ count }) => {
   const [value, setValue] = useAtom(count);
-  const [startTransiton, isPending] = useTransition({ timeoutMs: 2000 });
+  const [isPending, startTransiton] = useTransition();
   const increment = () => {
     startTransiton(() => {
       setValue((c) => c + 1);
@@ -38,7 +39,7 @@ const Total: React.FC = () => {
 
 const Update1: React.FC = () => {
   const setValue = useSetAtom(delayedUpdate1);
-  const [startTransiton, isPending] = useTransition({ timeoutMs: 2000 });
+  const [isPending, startTransiton] = useTransition();
   const decrement = () => {
     startTransiton(() => {
       setValue((c) => (c || 0) - 1);
