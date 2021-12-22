@@ -34,8 +34,7 @@
     "tsc-test": "tsc --project . --noEmit",
     "apidoc": "documentation readme --section API --markdown-toc false --parse-extension ts src/*.ts",
     "examples:01_minimal": "DIR=01_minimal EXT=js webpack-cli serve",
-    "examples:02_typescript": "DIR=02_typescript webpack-cli serve",
-    "examples:03_async": "DIR=03_async webpack-cli serve"
+    "examples:02_typescript": "DIR=02_typescript webpack-cli serve"
   },
   "jest": {
     "testEnvironment": "jsdom",
