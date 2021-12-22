@@ -1,12 +1,7 @@
 import React, { useEffect, useRef, StrictMode } from 'react';
 import { render, fireEvent, cleanup } from '@testing-library/react';
 
-import {
-  Provider,
-  atom,
-  useAtom,
-  useAtomValue,
-} from '../src/index';
+import { Provider, atom, useAtom } from '../src/index';
 
 describe('derived spec', () => {
   afterEach(cleanup);
@@ -88,7 +83,7 @@ describe('derived spec', () => {
     };
 
     const Doubled = () => {
-      const doubled = useAtomValue(doubledAtom);
+      const [doubled] = useAtom(doubledAtom);
       return <span>doubled: {doubled}</span>;
     };
 
