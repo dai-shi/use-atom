@@ -3,6 +3,7 @@
 [![CI](https://img.shields.io/github/workflow/status/dai-shi/use-atom/CI)](https://github.com/dai-shi/use-atom/actions?query=workflow%3ACI)
 [![npm](https://img.shields.io/npm/v/use-atom)](https://www.npmjs.com/package/use-atom)
 [![size](https://img.shields.io/bundlephobia/minzip/use-atom)](https://bundlephobia.com/result?p=use-atom)
+[![discord](https://img.shields.io/discord/627656437971288081)](https://discord.gg/MrQdmzd)
 
 Jotai like library without side effects and async
 
@@ -88,6 +89,6 @@ PORT=8080 npm run examples:01_minimal
 and open <http://localhost:8080> in your web browser.
 
 You can also try them in codesandbox.io:
-[01](https://codesandbox.io/s/github/dai-shi/use-atom/tree/master/examples/01_minimal)
-[02](https://codesandbox.io/s/github/dai-shi/use-atom/tree/master/examples/02_typescript)
-[03](https://codesandbox.io/s/github/dai-shi/use-atom/tree/master/examples/03_async)
+[01](https://codesandbox.io/s/github/dai-shi/use-atom/tree/main/examples/01_minimal)
+[02](https://codesandbox.io/s/github/dai-shi/use-atom/tree/main/examples/02_typescript)
+[03](https://codesandbox.io/s/github/dai-shi/use-atom/tree/main/examples/03_async)
