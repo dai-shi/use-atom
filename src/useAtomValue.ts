@@ -1,15 +1,18 @@
 import { useCallback, useEffect } from 'react';
 import { useContext, useContextSelector } from 'use-context-selector';
 
-import { StateContext, DispatchContext, readAtomValue } from './Provider';
+import { StateContext, DispatchContext, getAtomState } from './Provider';
 import { Atom } from './atom';
 
 export function useAtomValue<Value>(atom: Atom<Value>) {
   const dispatch = useContext(DispatchContext);
-  const value = useContextSelector(
+  const atomState = useContextSelector(
     StateContext,
-    useCallback((state) => readAtomValue(state, atom), [atom]),
+    useCallback((state) => getAtomState(state, atom), [atom]),
   );
+  useEffect(() => {
+    dispatch({ type: 'COMMIT_ATOM', atom, atomState });
+  });
   useEffect(() => {
     const id = Symbol();
     dispatch({ type: 'INIT_ATOM', atom, id });
@@ -17,5 +20,5 @@ export function useAtomValue<Value>(atom: Atom<Value>) {
       dispatch({ type: 'DISPOSE_ATOM', atom, id });
     };
   }, [dispatch, atom]);
-  return value;
+  return atomState.value;
 }

@@ -52,13 +52,13 @@ export function atom<Value, Update>(
   }
   if (write) {
     const a: WritableAtom<Value, Update> = {
-      read: (get) => get(a),
-      write: (_get, set, update) => set(a, update),
+      read: read as ((get: <V>(_a: Atom<V>) => V) => Value),
+      write,
     };
     return a;
   }
   const a: Atom<Value> = {
-    read: (get) => get(a),
+    read: read as ((get: <V>(_a: Atom<V>) => V) => Value),
   };
   return a;
 }

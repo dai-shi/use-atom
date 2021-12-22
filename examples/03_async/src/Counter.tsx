@@ -2,7 +2,7 @@
 // @ts-ignore
 import React, { unstable_useTransition as useTransition } from 'react';
 
-import { useAtom, useUpdateAtom } from 'use-atom';
+import { useAtom, useSetAtom } from 'use-atom';
 
 import { counts, delayedTotal, delayedUpdate1 } from './state';
 
@@ -37,7 +37,7 @@ const Total: React.FC = () => {
 };
 
 const Update1: React.FC = () => {
-  const setValue = useUpdateAtom(delayedUpdate1);
+  const setValue = useSetAtom(delayedUpdate1);
   const [startTransiton, isPending] = useTransition({ timeoutMs: 2000 });
   const decrement = () => {
     startTransiton(() => {
