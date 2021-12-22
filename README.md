@@ -1,40 +1,18 @@
-This project has been transferred to a new project and much **improved**.  
-:point_right: https://github.com/react-spring/jotai
-
-----
-
 # use-atom
 
 [![CI](https://img.shields.io/github/workflow/status/dai-shi/use-atom/CI)](https://github.com/dai-shi/use-atom/actions?query=workflow%3ACI)
 [![npm](https://img.shields.io/npm/v/use-atom)](https://www.npmjs.com/package/use-atom)
 [![size](https://img.shields.io/bundlephobia/minzip/use-atom)](https://bundlephobia.com/result?p=use-atom)
 
-Recoil inspired implementation with use-context-selector
+Jotai like library without side effects and async
 
 ## Introduction
 
-I have been developing a library called
+This library used to be a former library to [jotai](https://github.com/pmndrs/jotai).
+It's now rewritten to follow jotai API and depends on
 [use-context-selector](https://github.com/dai-shi/use-context-selector).
-[Recoil](https://recoiljs.org) makes me wonder if the atom abstraction
-can be implemented with useContextSelector.
-The good news is use-context-selector is CM ready (v1 with hack and
-v2 with useMutableSource.)
-
-This library provides a few functions and React hooks,
-and Recoil subset API of them.
-One of the biggest difference from Recoil is
-an atom doesn't require the string key.
-Hence, there's no support for persistant state
-and url encoded state.
-
-There are some limitations and observations:
-
-1. The default value of deriveAtom (= `selector` in Recoil) is `null`.
-1. At the very first `set`, we don't know the dependents and can't show pending.
-1. We can't do incremental loading.
-1. The dependents can only be added and no deletion is possible.
-1. (Still to confirm) No pending on `set`.
-1. (Still to confirm) Extra rerender in prod, no pending in dev.
+The biggest difference is that side effects in `write` is not allowed.
+Suspense is not supported as it also requires side effects.
 
 ## Install
 
@@ -42,16 +20,16 @@ There are some limitations and observations:
 npm install use-atom
 ```
 
-## Usage (useAtom)
+## Usage
 
 ```javascript
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-import { Provider, createAtom, useAtom } from 'use-atom';
+import { Provider, atom, useAtom } from 'use-atom';
 
-const countAtom = createAtom({ default: 0 });
-const textAtom = createAtom({ default: 'hello' });
+const countAtom = atom(0);
+const textAtom = atom('hello');
 
 const Counter = () => {
   const [count, setCount] = useAtom(countAtom);
@@ -89,56 +67,6 @@ const App = () => (
     <TextBox />
     <TextBox />
   </Provider>
-);
-```
-
-## Usage (Recoil subset API)
-
-```javascript
-import React from 'react';
-import ReactDOM from 'react-dom';
-
-import { RecoilRoot, atom, useRecoilState } from 'use-atom';
-
-const countAtom = atom({ key: 'count', default: 0 });
-const textAtom = atom({ key: 'text', default: 'hello' });
-
-const Counter = () => {
-  const [count, setCount] = useRecoilState(countAtom);
-  return (
-    <div>
-      {Math.random()}
-      <div>
-        <span>Count: {count}</span>
-        <button type="button" onClick={() => setCount(count + 1)}>+1</button>
-        <button type="button" onClick={() => setCount((c) => c - 1)}>-1</button>
-      </div>
-    </div>
-  );
-};
-
-const TextBox = () => {
-  const [text, setText] = useRecoilState(textAtom);
-  return (
-    <div>
-      {Math.random()}
-      <div>
-        <span>Text: {text}</span>
-        <input value={text} onChange={(event) => setText(event.target.value)} />
-      </div>
-    </div>
-  );
-};
-
-const App = () => (
-  <RecoilRoot>
-    <h1>Counter</h1>
-    <Counter />
-    <Counter />
-    <h1>TextBox</h1>
-    <TextBox />
-    <TextBox />
-  </RecoilRoot>
 );
 ```
 

@@ -1,13 +1,13 @@
 import React from 'react';
 
-import { useRecoilState } from 'use-atom';
+import { useAtom } from 'use-atom';
 
 import { counts, total } from './state';
 
 const Item: React.FC<{
   count: (typeof counts)[number];
 }> = ({ count }) => {
-  const [value, setValue] = useRecoilState(count);
+  const [value, setValue] = useAtom(count);
   return (
     <li>
       <span>Count: {value}</span>
@@ -18,7 +18,7 @@ const Item: React.FC<{
 };
 
 const Total: React.FC = () => {
-  const [value] = useRecoilState(total);
+  const [value] = useAtom(total);
   return (
     <div>
       <span>Total: {value}</span>
@@ -32,7 +32,7 @@ const Counter: React.FC = () => (
     {Math.random()}
     <ul>
       {counts.map((count) => (
-        <Item key={count.key} count={count} />
+        <Item count={count} />
       ))}
     </ul>
     <Total />

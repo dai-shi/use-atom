@@ -1,12 +1,7 @@
-import React, { useRef, StrictMode } from 'react';
+import React, { useEffect, useRef, StrictMode } from 'react';
 import { render, fireEvent, cleanup } from '@testing-library/react';
 
-import {
-  createAtom,
-  deriveAtom,
-  useAtom,
-  Provider,
-} from '../src/index';
+import { Provider, atom, useAtom } from '../src/index';
 
 describe('derived spec', () => {
   afterEach(cleanup);
@@ -30,37 +25,77 @@ describe('derived spec', () => {
   };
 
   it('counter', () => {
-    const globalState = createAtom({
-      default: initialState,
-    });
+    const globalAtom = atom(initialState);
 
-    const countState = deriveAtom({
-      get: ({ get }) => get(globalState).count,
-      set: ({ get, set }, newValue: number) => {
-        set(globalState, reducer(get(globalState), { type: 'setCount', value: newValue }));
+    const countAtom = atom(
+      (get) => get(globalAtom).count,
+      (get, set, update: (prev: number) => number) => {
+        set(globalAtom, reducer(get(globalAtom), {
+          type: 'setCount',
+          value: update(get(globalAtom).count),
+        }));
       },
-    });
+    );
 
-    const Counter1 = () => {
-      const [count1, setCount] = useAtom(countState);
-      const increment = () => setCount((c) => (c || 0) + 1);
-      const renderCount = useRef(0);
-      renderCount.current += 1;
+    const Counter = () => {
+      const [count, setCount] = useAtom(countAtom);
+      const increment = () => setCount((c) => c + 1);
+      const commitCount = useRef(0);
+      useEffect(() => {
+        commitCount.current += 1;
+      });
       return (
         <div>
-          <span>{count1}</span>
+          <span>{count}</span>
           <button type="button" onClick={increment}>+1</button>
-          <span>{renderCount.current}</span>
+          <span>{commitCount.current}</span>
         </div>
       );
     };
+
     const App = () => (
       <StrictMode>
         <Provider>
-          <Counter1 />
+          <Counter />
         </Provider>
       </StrictMode>
     );
+
+    const { getAllByText, container } = render(<App />);
+    expect(container).toMatchSnapshot();
+    fireEvent.click(getAllByText('+1')[0]);
+    expect(container).toMatchSnapshot();
+  });
+
+  it('double counter', () => {
+    const countAtom = atom(0);
+    const doubledAtom = atom((get) => get(countAtom) * 2);
+
+    const Counter = () => {
+      const [count, setCount] = useAtom(countAtom);
+      const increment = () => setCount((c) => c + 1);
+      return (
+        <div>
+          <span>count: {count}</span>
+          <button type="button" onClick={increment}>+1</button>
+        </div>
+      );
+    };
+
+    const Doubled = () => {
+      const [doubled] = useAtom(doubledAtom);
+      return <span>doubled: {doubled}</span>;
+    };
+
+    const App = () => (
+      <StrictMode>
+        <Provider>
+          <Counter />
+          <Doubled />
+        </Provider>
+      </StrictMode>
+    );
+
     const { getAllByText, container } = render(<App />);
     expect(container).toMatchSnapshot();
     fireEvent.click(getAllByText('+1')[0]);

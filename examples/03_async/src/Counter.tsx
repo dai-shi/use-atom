@@ -1,16 +1,17 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-// @ts-ignore
-import React, { unstable_useTransition as useTransition } from 'react';
+// eslint-disable-next-line spaced-comment
+/// <reference types="react/next" />
 
-import { useRecoilState, useSetRecoilState } from 'use-atom';
+import React, { useTransition } from 'react';
+
+import { useAtom, useSetAtom } from 'use-atom';
 
 import { counts, delayedTotal, delayedUpdate1 } from './state';
 
 const Item: React.FC<{
   count: (typeof counts)[number];
 }> = ({ count }) => {
-  const [value, setValue] = useRecoilState(count);
-  const [startTransiton, isPending] = useTransition({ timeoutMs: 2000 });
+  const [value, setValue] = useAtom(count);
+  const [isPending, startTransiton] = useTransition();
   const increment = () => {
     startTransiton(() => {
       setValue((c) => c + 1);
@@ -27,7 +28,7 @@ const Item: React.FC<{
 };
 
 const Total: React.FC = () => {
-  const [value] = useRecoilState(delayedTotal);
+  const [value] = useAtom(delayedTotal);
   return (
     <div>
       <span>Total (delayed): {value}</span>
@@ -37,8 +38,8 @@ const Total: React.FC = () => {
 };
 
 const Update1: React.FC = () => {
-  const setValue = useSetRecoilState(delayedUpdate1);
-  const [startTransiton, isPending] = useTransition({ timeoutMs: 2000 });
+  const setValue = useSetAtom(delayedUpdate1);
+  const [isPending, startTransiton] = useTransition();
   const decrement = () => {
     startTransiton(() => {
       setValue((c) => (c || 0) - 1);
@@ -59,7 +60,7 @@ const Counter: React.FC = () => (
     <Update1 />
     <ul>
       {counts.map((count) => (
-        <Item key={count.key} count={count} />
+        <Item count={count} />
       ))}
     </ul>
     <Total />
