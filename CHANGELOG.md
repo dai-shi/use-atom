@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+
+## [0.6.0] - 2021-12-23
 ### Added
 - Jotai compatible API
 ### Removed
