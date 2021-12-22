@@ -11,8 +11,8 @@ describe('derived spec', () => {
     dummy: 0,
   };
 
-  type Action = { type: 'setCount'; value: number };
-  const reducer = (state = initialState, action: Action) => {
+  type Action = { type: 'setCount'; value: number } | { type?: undefined };
+  const reducer = (state = initialState, action: Action = {}) => {
     switch (action.type) {
       case 'setCount':
         return {

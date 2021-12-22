@@ -8,7 +8,9 @@ export const counts = [
   atom(0),
 ];
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const sleep = (ms: number) => new Promise((r) => {
+  setTimeout(r, ms);
+});
 
 export const delayedTotal = atom(async (get) => {
   await sleep(1000);
