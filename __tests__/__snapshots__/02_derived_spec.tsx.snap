@@ -35,3 +35,43 @@ exports[`derived spec counter 2`] = `
   </div>
 </div>
 `;
+
+exports[`derived spec double counter 1`] = `
+<div>
+  <div>
+    <span>
+      count: 
+      0
+    </span>
+    <button
+      type="button"
+    >
+      +1
+    </button>
+  </div>
+  <span>
+    doubled: 
+    0
+  </span>
+</div>
+`;
+
+exports[`derived spec double counter 2`] = `
+<div>
+  <div>
+    <span>
+      count: 
+      1
+    </span>
+    <button
+      type="button"
+    >
+      +1
+    </button>
+  </div>
+  <span>
+    doubled: 
+    2
+  </span>
+</div>
+`;

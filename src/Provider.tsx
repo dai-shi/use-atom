@@ -37,7 +37,7 @@ type Action = InitAction | DisposeAction | CommitAction | SetAction;
 type AtomState<Value> = {
   value: Value;
   dependencies: Set<Atom<unknown>>;
-  dependents: Set<Atom<unknown> | symbol>; // symbol is id from INIT_ATOM
+  dependents?: Set<Atom<unknown> | symbol>; // symbol is id from INIT_ATOM
 };
 
 type State = Map<Atom<unknown>, AtomState<unknown>>; // immutable map
@@ -55,7 +55,7 @@ export const getAtomState = <Value, >(state: State, atom: Atom<Value>) => {
     if ('init' in a) return a.init as V;
     throw new Error('no atom init');
   });
-  const newAtomState: AtomState<Value> = { value, dependencies, dependents: new Set() };
+  const newAtomState: AtomState<Value> = { value, dependencies };
   return newAtomState;
 };
 
@@ -82,7 +82,7 @@ const disposeAtom = (
   let nextState = new Map(prevState);
   const deleted: Atom<unknown>[] = [];
   nextState.forEach((atomState, atom) => {
-    if (atomState.dependents.has(dependent)) {
+    if (atomState.dependents?.has(dependent)) {
       const nextDependents = new Set(atomState.dependents);
       nextDependents.delete(dependent);
       if (nextDependents.size) {
@@ -111,6 +111,10 @@ const commitAtom = (
     return prevState;
   }
   let nextState = new Map(prevState);
+  if (prevAtomState?.dependents && !atomState.dependents) {
+    // eslint-disable-next-line no-param-reassign
+    atomState.dependents = prevAtomState.dependents; // copy dependents
+  }
   nextState.set(atom, atomState);
   const deleted: Atom<unknown>[] = [];
   const prevDependencies = new Set(prevAtomState?.dependencies);
@@ -154,15 +158,15 @@ const setAtom = <Value, Update>(
   const updateDependents = (atom: Atom<unknown>) => {
     const atomState = nextState.get(atom);
     if (!atomState) return;
-    atomState.dependents.forEach((dependent) => {
+    atomState.dependents?.forEach((dependent) => {
       if (typeof dependent === 'symbol') return;
       const prevDependentState = nextState.get(dependent);
       nextState.delete(dependent); // clear to re-evaluate
       const dependentState = getAtomState(nextState, dependent);
       if (prevDependentState) {
-        prevDependentState.dependents.forEach((d) => {
+        prevDependentState.dependents?.forEach((d) => {
           if (typeof d === 'symbol') {
-            dependentState.dependents.add(d); // copy back symbols
+            dependentState.dependents?.add(d); // copy back symbols
           }
         });
       }
