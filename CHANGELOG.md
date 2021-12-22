@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.6.1] - 2021-12-23
+### Changed
+- Fix peerDependencies
+
 ## [0.6.0] - 2021-12-23
 ### Added
 - Jotai compatible API
