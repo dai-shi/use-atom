@@ -11,7 +11,9 @@ export function useAtomValue<Value>(atom: Atom<Value>) {
     useCallback((state) => getAtomState(state, atom), [atom]),
   );
   useEffect(() => {
-    dispatch({ type: 'COMMIT_ATOM', atom, atomState });
+    if (!atomState.dependents) {
+      dispatch({ type: 'COMMIT_ATOM', atom, atomState });
+    }
   });
   useEffect(() => {
     const id = Symbol();
