@@ -100,16 +100,12 @@ const disposeAtom = (
   return nextState;
 };
 
-const commitAtom = (
+const computeDependents = (
   prevState: State,
   atom: Atom<unknown>,
   atomState: AtomState<unknown>,
 ) => {
   const prevAtomState = prevState.get(atom);
-  if (prevAtomState === atomState) {
-    // bail out
-    return prevState;
-  }
   let nextState = new Map(prevState);
   if (prevAtomState?.dependents && !atomState.dependents) {
     // eslint-disable-next-line no-param-reassign
@@ -148,12 +144,23 @@ const commitAtom = (
   return nextState;
 };
 
+const commitAtom = (
+  prevState: State,
+  atom: Atom<unknown>,
+  atomState: AtomState<unknown>,
+) => {
+  if (atomState.dependents) {
+    return prevState;
+  }
+  return computeDependents(prevState, atom, atomState);
+};
+
 const setAtom = <Value, Update>(
   prevState: State,
   updatingAtom: WritableAtom<Value, Update>,
   update: Update,
 ) => {
-  const nextState = new Map(prevState);
+  let nextState = new Map(prevState);
 
   const updateDependents = (atom: Atom<unknown>) => {
     const atomState = nextState.get(atom);
@@ -164,13 +171,9 @@ const setAtom = <Value, Update>(
       nextState.delete(dependent); // clear to re-evaluate
       const dependentState = getAtomState(nextState, dependent);
       if (prevDependentState) {
-        prevDependentState.dependents?.forEach((d) => {
-          if (typeof d === 'symbol') {
-            dependentState.dependents?.add(d); // copy back symbols
-          }
-        });
+        nextState.set(dependent, prevDependentState); // restore it
       }
-      nextState.set(dependent, dependentState);
+      nextState = computeDependents(nextState, dependent, dependentState);
       updateDependents(dependent);
     });
   };
@@ -187,7 +190,7 @@ const setAtom = <Value, Update>(
             ...atomState,
             value: u,
           };
-          nextState.set(atom, nextAtomState);
+          nextState = computeDependents(nextState, atom, nextAtomState);
           updateDependents(atom);
         } else {
           updateAtomValue(a as WritableAtom<unknown, unknown>, u);
