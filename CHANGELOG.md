@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.7.0] - 2022-03-26
+### Changed
+- fix: updating atom in concurrent rendering #25
+
 ## [0.6.1] - 2021-12-23
 ### Changed
 - Fix peerDependencies
