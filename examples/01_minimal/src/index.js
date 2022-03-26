@@ -1,5 +1,5 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 
 import { Provider, atom, useAtom } from 'use-atom';
 
@@ -44,4 +44,4 @@ const App = () => (
   </Provider>
 );
 
-ReactDOM.createRoot(document.getElementById('app')).render(<App />);
+createRoot(document.getElementById('app')).render(<App />);
