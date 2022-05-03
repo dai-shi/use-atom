@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.8.0] - 2022-05-03
+### Changed
+- update dependencies and fix types #26
+- eliminate React.FC types
+
 ## [0.7.0] - 2022-03-26
 ### Changed
 - fix: updating atom in concurrent rendering #25
