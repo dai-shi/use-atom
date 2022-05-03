@@ -207,7 +207,7 @@ const setAtom = <Value, Update>(
 export const DispatchContext = createContext(warningObject as Dispatch<Action>);
 export const StateContext = createContext(warningObject as State);
 
-export const Provider: React.FC = ({ children }) => {
+export const Provider: React.FC<React.PropsWithChildren<never>> = ({ children }) => {
   const [state, setState] = useState<State>(() => new Map());
   const dispatch = useCallback((action: Action) => setState((prevState) => {
     if (action.type === 'INIT_ATOM') {
