@@ -4,9 +4,9 @@ import { useAtom } from 'use-atom';
 
 import { counts, total } from './state';
 
-const Item: React.FC<{
+const Item = ({ count }: {
   count: (typeof counts)[number];
-}> = ({ count }) => {
+}) => {
   const [value, setValue] = useAtom(count);
   return (
     <li>
@@ -17,7 +17,7 @@ const Item: React.FC<{
   );
 };
 
-const Total: React.FC = () => {
+const Total = () => {
   const [value] = useAtom(total);
   return (
     <div>
@@ -27,7 +27,7 @@ const Total: React.FC = () => {
   );
 };
 
-const Counter: React.FC = () => (
+const Counter = () => (
   <div>
     {Math.random()}
     <ul>

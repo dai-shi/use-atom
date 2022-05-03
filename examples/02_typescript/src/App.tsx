@@ -4,7 +4,7 @@ import { Provider } from 'use-atom';
 
 import Counter from './Counter';
 
-const App: React.FC = () => (
+const App = () => (
   <Provider>
     <h1>Counter</h1>
     <Counter />
