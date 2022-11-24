@@ -5,8 +5,7 @@ import React, {
   useState,
 } from 'react';
 import { createContext } from 'use-context-selector';
-
-import { Atom, WritableAtom } from './atom';
+import type { Atom, WritableAtom } from 'jotai/vanilla';
 
 const warningObject = new Proxy({}, {
   get() { throw new Error('Please use <Provider>'); },
@@ -33,8 +32,8 @@ type CommitAction = {
 
 type SetAction = {
   type: 'SET_ATOM';
-  atom: WritableAtom<unknown, unknown>;
-  update: unknown;
+  atom: WritableAtom<unknown, unknown[], void>;
+  args: unknown[];
 };
 
 type Action = InitAction | DisposeAction | CommitAction | SetAction;
@@ -51,6 +50,14 @@ export const getAtomState = <Value, >(state: State, atom: Atom<Value>) => {
   const atomState = state.get(atom) as AtomState<Value> | undefined;
   if (atomState) return atomState;
   const dependencies = new Set<Atom<unknown>>();
+  const options = {
+    get signal(): AbortSignal {
+      throw new Error('signal is not supported');
+    },
+    get retry(): () => void {
+      throw new Error('retry is not supported');
+    },
+  };
   const value = atom.read(<V, >(a: Atom<V>) => {
     if (a !== atom as unknown as Atom<V>) {
       dependencies.add(a);
@@ -59,7 +66,7 @@ export const getAtomState = <Value, >(state: State, atom: Atom<Value>) => {
     }
     if ('init' in a) return a.init as V;
     throw new Error('no atom init');
-  });
+  }, options);
   const newAtomState: AtomState<Value> = { value, dependencies };
   return newAtomState;
 };
@@ -160,10 +167,10 @@ const commitAtom = (
   return computeDependents(prevState, atom, atomState);
 };
 
-const setAtom = <Value, Update>(
+const setAtom = <Value, Args extends unknown[]>(
   prevState: State,
-  updatingAtom: WritableAtom<Value, Update>,
-  update: Update,
+  updatingAtom: WritableAtom<Value, Args, void>,
+  args: Args,
 ) => {
   let nextState = new Map(prevState);
 
@@ -183,29 +190,30 @@ const setAtom = <Value, Update>(
     });
   };
 
-  const updateAtomValue = (atom: WritableAtom<unknown, unknown>, upd: unknown) => {
-    atom.write(
-      <V, >(a: Atom<V>) => getAtomState(nextState, a).value,
-      <V, U>(a: WritableAtom<V, U>, u: U) => {
-        if (a === atom) {
-          const atomState = nextState.get(atom);
-          const nextAtomState: AtomState<unknown> = {
-            dependencies: new Set(),
-            dependents: new Set(),
-            ...atomState,
-            value: u,
-          };
-          nextState = computeDependents(nextState, atom, nextAtomState);
-          updateDependents(atom);
-        } else {
-          updateAtomValue(a as WritableAtom<unknown, unknown>, u);
-        }
-      },
-      upd,
+  const updateAtomValue = <Val, Ags extends unknown[], Res>(
+    atom: WritableAtom<Val, Ags, Res>,
+    ...ags: Ags
+  ): Res => atom.write(
+    <V, >(a: Atom<V>) => getAtomState(nextState, a).value,
+    <V, As extends unknown[], R>(a: WritableAtom<V, As, R>, ...as: As) => {
+      if ((a as unknown) === atom) {
+        const atomState = nextState.get(atom);
+        const nextAtomState: AtomState<unknown> = {
+          dependencies: new Set(),
+          dependents: new Set(),
+          ...atomState,
+          value: as[0],
+        };
+        nextState = computeDependents(nextState, atom, nextAtomState);
+        updateDependents(atom);
+        return undefined as R;
+      }
+      return updateAtomValue(a as WritableAtom<unknown, unknown[], unknown>, ...as) as R;
+    },
+    ...ags,
     );
-  };
 
-  updateAtomValue(updatingAtom as WritableAtom<unknown, unknown>, update);
+  updateAtomValue(updatingAtom as WritableAtom<unknown, unknown[], void>, ...args);
   return nextState;
 };
 
@@ -225,7 +233,7 @@ export const Provider = ({ children }: { children: ReactNode }) => {
       return commitAtom(prevState, action.atom, action.atomState);
     }
     if (action.type === 'SET_ATOM') {
-      return setAtom(prevState, action.atom, action.update);
+      return setAtom(prevState, action.atom, action.args);
     }
     throw new Error('unexpected action type');
   }), []);

@@ -5389,6 +5389,10 @@ jest@^29.3.1:
     import-local "^3.0.2"
     jest-cli "^29.3.1"
 
+"jotai@https://pkg.csb.dev/pmndrs/jotai/commit/00aeb2eb/jotai":
+  version "1.10.0"
+  resolved "https://pkg.csb.dev/pmndrs/jotai/commit/00aeb2eb/jotai#a4266a8226a7094ce9181d8cc4f8738623d1ea43"
+
 js-sdsl@^4.1.4:
   version "4.2.0"
   resolved "https://registry.yarnpkg.com/js-sdsl/-/js-sdsl-4.2.0.tgz#278e98b7bea589b8baaf048c20aeb19eb7ad09d0"
