@@ -54,8 +54,8 @@ export const getAtomState = <Value, >(state: State, atom: Atom<Value>) => {
     get signal(): AbortSignal {
       throw new Error('signal is not supported');
     },
-    get retry(): () => void {
-      throw new Error('retry is not supported');
+    get setSelf(): never {
+      throw new Error('setSelf is not supported');
     },
   };
   const value = atom.read(<V, >(a: Atom<V>) => {
