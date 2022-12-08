@@ -1,8 +1,7 @@
 import { useCallback, useEffect } from 'react';
 import { useContext, useContextSelector } from 'use-context-selector';
-
+import type { Atom } from 'jotai/vanilla';
 import { StateContext, DispatchContext, getAtomState } from './Provider';
-import { Atom } from './atom';
 
 export function useAtomValue<Value>(atom: Atom<Value>) {
   const dispatch = useContext(DispatchContext);

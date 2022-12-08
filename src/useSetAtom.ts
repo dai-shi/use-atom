@@ -1,22 +1,24 @@
-import { SetStateAction, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useContext, useContextUpdate } from 'use-context-selector';
+import type { Atom, WritableAtom } from 'jotai/vanilla';
 import { StateContext, DispatchContext } from './Provider';
-import { Atom, WritableAtom } from './atom';
 
-const isWritable = <Value, Update>(
-  atom: Atom<Value> | WritableAtom<Value, Update>,
-): atom is WritableAtom<Value, Update> => !!(atom as WritableAtom<Value, Update>).write;
+const isWritable = <Value, Args extends unknown[]>(
+  atom: Atom<Value> | WritableAtom<Value, Args, void>,
+): atom is WritableAtom<Value, Args, void> => !!(atom as WritableAtom<Value, Args, void>).write;
 
-export function useSetAtom<Value, Update>(atom: WritableAtom<Value, Update>) {
+export function useSetAtom<Value, Args extends unknown[]>(
+  atom: WritableAtom<Value, Args, void>,
+) {
   const dispatch = useContext(DispatchContext);
   const updateState = useContextUpdate(StateContext);
-  const setAtom = useCallback((update: SetStateAction<Value>) => {
+  const setAtom = useCallback((...args: Args) => {
     if (isWritable(atom)) {
       updateState(() => {
         dispatch({
           type: 'SET_ATOM',
-          atom: atom as WritableAtom<unknown, unknown>,
-          update,
+          atom: atom as WritableAtom<unknown, unknown[], void>,
+          args,
         });
       });
     } else {
