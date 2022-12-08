@@ -3,8 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "react": "experimental",
-    "react-dom": "experimental",
+    "jotai": "latest",
+    "react": "latest",
+    "react-dom": "latest",
     "react-scripts": "latest",
     "use-atom": "latest"
   },

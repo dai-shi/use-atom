@@ -5,8 +5,9 @@
   "dependencies": {
     "@types/react": "latest",
     "@types/react-dom": "latest",
-    "react": "experimental",
-    "react-dom": "experimental",
+    "jotai": "latest",
+    "react": "latest",
+    "react-dom": "latest",
     "react-scripts": "latest",
     "use-atom": "latest",
     "typescript": "latest"
