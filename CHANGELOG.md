@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.9.0] - 2022-12-08
+### Changed
+- Migrate to Jotai v2 API #33
+  - Jotai is a peer dependency
+
 ## [0.8.0] - 2022-05-03
 ### Changed
 - update dependencies and fix types #26

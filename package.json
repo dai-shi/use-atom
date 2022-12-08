@@ -1,7 +1,7 @@
 {
   "name": "use-atom",
-  "description": "Jotai like library without side effects and async",
-  "version": "0.8.0",
+  "description": "Yet another implementation for Jotai atoms without side effects",
+  "version": "0.9.0",
   "author": "Daishi Kato",
   "repository": {
     "type": "git",
